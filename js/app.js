@@ -699,6 +699,14 @@ function closeConfirmModal() {
     document.getElementById('confirmModal').classList.remove('active');
 }
 
+// 移动端收起/展开购物车
+function toggleCart() {
+    const panel = document.getElementById('cartPanel');
+    const btn = panel.querySelector('.cart-toggle-btn');
+    panel.classList.toggle('collapsed');
+    btn.textContent = panel.classList.contains('collapsed') ? '▲' : '▼';
+}
+
 // ========================================
 // 启动
 // ========================================
