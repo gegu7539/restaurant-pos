@@ -28,6 +28,18 @@ const state = {
 const ACCESS_PASSWORD = '474679';
 
 function init() {
+  // 全局错误捕获
+  window.onerror = function (msg, url, line, col, error) {
+    document.body.innerHTML += `
+            <div style="position:fixed;top:0;left:0;right:0;background:red;color:white;padding:20px;z-index:9999;">
+                <h3>⚠️ 厨房显示错误</h3>
+                <p>${msg}</p>
+                <small>${url}:${line}:${col}</small>
+            </div>
+        `;
+    return false;
+  };
+
   // 检查是否已验证
   if (sessionStorage.getItem('pos_authenticated') !== 'true') {
     const password = prompt('请输入访问密码：');
@@ -56,10 +68,13 @@ function init() {
       });
     }).catch(error => {
       console.error('Firebase 登录失败:', error);
-      alert('系统连接失败：无法进行身份验证');
+      alert('警告：无法连接云端数据库（可能是未开启匿名验证）。\n无法获取实时订单！');
+      // 降级：虽然无法获取实时订单，但渲染包含空状态的界面
+      renderOrders();
     });
   } catch (e) {
     console.error(e);
+    alert('系统错误: ' + e.message);
   }
 }
 

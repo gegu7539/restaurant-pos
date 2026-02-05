@@ -38,6 +38,18 @@ const state = {
 const ACCESS_PASSWORD = '474679';
 
 async function init() {
+    // 全局错误捕获，防止白屏
+    window.onerror = function (msg, url, line, col, error) {
+        document.body.innerHTML += `
+            <div style="position:fixed;top:0;left:0;right:0;background:red;color:white;padding:20px;z-index:9999;">
+                <h3>⚠️ 系统发生错误</h3>
+                <p>${msg}</p>
+                <small>${url}:${line}:${col}</small>
+            </div>
+        `;
+        return false;
+    };
+
     // 检查是否已验证
     if (sessionStorage.getItem('pos_authenticated') !== 'true') {
         const password = prompt('请输入访问密码：');
@@ -54,7 +66,13 @@ async function init() {
         console.log('Firebase 匿名登录成功');
     } catch (error) {
         console.error('Firebase 登录失败:', error);
-        alert('系统连接失败：无法进行身份验证');
+        alert('警告：无法连接云端数据库（可能是未开启匿名验证）。\n系统将以【离线模式】运行，数据无法同步到厨房！');
+        // 降级：继续执行初始化，但不监听 Firebase
+        await loadMenu();
+        renderCategories();
+        renderMenu();
+        renderCart();
+        updateOrderNumber();
         return;
     }
 
