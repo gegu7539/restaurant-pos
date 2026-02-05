@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>厨房订单显示 - 小饭馆</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+    <div class="kitchen-container">
+        <!-- 顶部栏 -->
+        <header class="kitchen-header">
+            <h1>👨‍🍳 厨房订单</h1>
+            <div class="header-actions">
+                <span id="orderCount" style="margin-right: 16px; font-size: 1.1rem;">待处理: 0</span>
+                <button class="btn btn-outline" onclick="window.close()">返回前台</button>
+            </div>
+        </header>
+
+        <!-- 订单网格 -->
+        <div class="orders-grid" id="ordersGrid">
+            <!-- 动态生成 -->
+        </div>
+    </div>
+
+    <script src="js/kitchen.js"></script>
+</body>
+
+</html>

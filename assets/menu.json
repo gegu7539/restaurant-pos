@@ -1,0 +1,158 @@
+{
+    "categories": [
+        {
+            "id": "hot",
+            "name": "热菜",
+            "icon": "🍲"
+        },
+        {
+            "id": "cold",
+            "name": "凉菜",
+            "icon": "🥗"
+        },
+        {
+            "id": "staple",
+            "name": "主食",
+            "icon": "🍚"
+        },
+        {
+            "id": "soup",
+            "name": "汤品",
+            "icon": "🍜"
+        },
+        {
+            "id": "drink",
+            "name": "饮料",
+            "icon": "🥤",
+            "isDrink": true
+        }
+    ],
+    "items": [
+        {
+            "id": 1,
+            "name": "红烧肉",
+            "price": 38,
+            "category": "hot",
+            "image": "🥩"
+        },
+        {
+            "id": 2,
+            "name": "鱼香肉丝",
+            "price": 28,
+            "category": "hot",
+            "image": "🍖"
+        },
+        {
+            "id": 3,
+            "name": "宫保鸡丁",
+            "price": 32,
+            "category": "hot",
+            "image": "🍗"
+        },
+        {
+            "id": 4,
+            "name": "麻婆豆腐",
+            "price": 22,
+            "category": "hot",
+            "image": "🧈"
+        },
+        {
+            "id": 5,
+            "name": "糖醋里脊",
+            "price": 35,
+            "category": "hot",
+            "image": "🍖"
+        },
+        {
+            "id": 6,
+            "name": "凉拌黄瓜",
+            "price": 12,
+            "category": "cold",
+            "image": "🥒"
+        },
+        {
+            "id": 7,
+            "name": "皮蛋豆腐",
+            "price": 15,
+            "category": "cold",
+            "image": "🥚"
+        },
+        {
+            "id": 8,
+            "name": "口水鸡",
+            "price": 28,
+            "category": "cold",
+            "image": "🍗"
+        },
+        {
+            "id": 9,
+            "name": "白米饭",
+            "price": 3,
+            "category": "staple",
+            "image": "🍚"
+        },
+        {
+            "id": 10,
+            "name": "蛋炒饭",
+            "price": 15,
+            "category": "staple",
+            "image": "🍳"
+        },
+        {
+            "id": 11,
+            "name": "面条",
+            "price": 12,
+            "category": "staple",
+            "image": "🍝"
+        },
+        {
+            "id": 12,
+            "name": "紫菜蛋花汤",
+            "price": 10,
+            "category": "soup",
+            "image": "🥣"
+        },
+        {
+            "id": 13,
+            "name": "番茄蛋汤",
+            "price": 12,
+            "category": "soup",
+            "image": "🍅"
+        },
+        {
+            "id": 14,
+            "name": "可乐",
+            "price": 5,
+            "category": "drink",
+            "image": "🥤"
+        },
+        {
+            "id": 15,
+            "name": "雪碧",
+            "price": 5,
+            "category": "drink",
+            "image": "🥤"
+        },
+        {
+            "id": 16,
+            "name": "橙汁",
+            "price": 8,
+            "category": "drink",
+            "image": "🍊"
+        },
+        {
+            "id": 17,
+            "name": "啤酒",
+            "price": 10,
+            "category": "drink",
+            "image": "🍺"
+        },
+        {
+            "id": 18,
+            "name": "矿泉水",
+            "price": 3,
+            "category": "drink",
+            "image": "💧"
+        }
+    ]
+}

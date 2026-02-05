@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>小饭馆点单系统</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- 主内容区 -->
+    <div class="main-content">
+      <!-- 顶部栏 -->
+      <header class="header">
+        <h1>🍜 小饭馆点单系统</h1>
+        <div class="header-actions">
+          <button class="btn btn-outline" onclick="openKitchen()">👨‍🍳 厨房显示</button>
+          <button class="btn btn-outline" onclick="showOrderHistory()">📋 历史订单</button>
+          <button class="btn btn-danger" onclick="resetOrderNumber()">🔄 重置编号</button>
+        </div>
+      </header>
+      
+      <!-- 分类导航 -->
+      <nav class="categories" id="categories">
+        <!-- 动态生成 -->
+      </nav>
+      
+      <!-- 菜品网格 -->
+      <div class="menu-grid" id="menuGrid">
+        <!-- 动态生成 -->
+      </div>
+    </div>
+    
+    <!-- 购物车面板 -->
+    <aside class="cart-panel">
+      <div class="cart-header">
+        <h2>🛒 当前订单</h2>
+        <div class="order-number" id="orderNumber">订单号: #001</div>
+      </div>
+      
+      <div class="cart-content" id="cartContent">
+        <!-- 动态生成 -->
+      </div>
+      
+      <div class="cart-footer">
+        <div class="total-row">
+          <span class="total-label">总计</span>
+          <span class="total-amount" id="totalAmount">¥0</span>
+        </div>
+        <button class="submit-btn" id="submitBtn" onclick="submitOrder()" disabled>
+          提交订单
+        </button>
+      </div>
+    </aside>
+  </div>
+  
+  <!-- 订单历史弹窗 -->
+  <div class="modal-overlay" id="historyModal">
+    <div class="modal">
+      <h3>📋 历史订单</h3>
+      <p>选择订单以追加饮料：</p>
+      <div class="orders-list" id="ordersList">
+        <!-- 动态生成 -->
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-outline" onclick="closeHistoryModal()">关闭</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- 确认弹窗 -->
+  <div class="modal-overlay" id="confirmModal">
+    <div class="modal">
+      <h3 id="confirmTitle">确认操作</h3>
+      <p id="confirmMessage"></p>
+      <div class="modal-actions">
+        <button class="btn btn-outline" onclick="closeConfirmModal()">取消</button>
+        <button class="btn btn-success" id="confirmBtn">确认</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/app.js"></script>
+</body>
+</html>
