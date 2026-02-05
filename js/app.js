@@ -664,12 +664,17 @@ function togglePayment(type) {
 
 function showOrderHistory() {
     const container = document.getElementById('ordersList');
-    const pendingOrders = state.orders.filter(o => o.status !== 'completed');
+    // 显示未完成订单和最近的截断标记
+    const list = state.orders.filter(o => o.status !== 'completed' || o.isSeparator);
 
-    if (pendingOrders.length === 0) {
+    if (list.length === 0) {
         container.innerHTML = '<p style="text-align: center; color: #999;">暂无进行中的订单</p>';
     } else {
-        container.innerHTML = pendingOrders.map(order => `
+        container.innerHTML = list.map(order => {
+            if (order.isSeparator) {
+                return `<div style="text-align: center; color: #999; margin: 10px 0; font-size: 0.8rem;">${order.separatorText}</div>`;
+            }
+            return `
       <div class="order-list-item" onclick="selectOrderForDrink(${order.id})">
         <span>#${String(order.number).padStart(3, '0')}</span>
         <span>¥${order.total}</span>
@@ -677,7 +682,7 @@ function showOrderHistory() {
           ${new Date(order.createdAt).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}
         </span>
       </div>
-    `).join('');
+    `}).join('');
     }
 
     document.getElementById('historyModal').classList.add('active');

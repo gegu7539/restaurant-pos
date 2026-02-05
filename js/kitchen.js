@@ -90,12 +90,14 @@ function saveOrders() {
 
 function renderOrders() {
   const container = document.getElementById('ordersGrid');
-  const pendingOrders = state.orders.filter(o => o.status !== 'completed');
+  // 显示未完成订单和最近的截断标记
+  const list = state.orders.filter(o => o.status !== 'completed' || o.isSeparator);
 
   // 更新待处理数量
-  document.getElementById('orderCount').textContent = `待处理: ${pendingOrders.length} 单`;
+  const pendingCount = list.filter(o => !o.isSeparator).length;
+  document.getElementById('orderCount').textContent = `待处理: ${pendingCount} 单`;
 
-  if (pendingOrders.length === 0) {
+  if (list.length === 0) {
     container.innerHTML = `
       <div style="grid-column: 1/-1; text-align: center; padding: 60px; color: #999;">
         <div style="font-size: 4rem; margin-bottom: 20px;">🍳</div>
@@ -105,14 +107,23 @@ function renderOrders() {
     return;
   }
 
-  container.innerHTML = pendingOrders.map(order => renderOrderCard(order)).join('');
+  container.innerHTML = list.map(order => renderOrderCard(order)).join('');
 }
 
 function renderOrderCard(order) {
+  if (order.isSeparator) {
+    return `
+            <div style="grid-column: 1/-1; text-align: center; color: #999; margin: 20px 0; border-top: 1px dashed #ddd; padding-top: 20px;">
+                ${order.separatorText}
+            </div>
+        `;
+  }
+
   const time = new Date(order.createdAt).toLocaleTimeString('zh-CN', {
     hour: '2-digit',
     minute: '2-digit'
   });
+  // ... rest of the function (需要返回原始的模板字符串)
 
   return `
     <div class="order-card ${order.status === 'completed' ? 'completed' : ''}">
