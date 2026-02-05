@@ -44,13 +44,31 @@ function init() {
 
 // 监听 Firebase 实时变化
 function listenToFirebaseChanges() {
+  console.log('开始监听 Firebase...');
+
+  // 监听连接状态
+  database.ref('.info/connected').on('value', (snap) => {
+    if (snap.val() === true) {
+      console.log('✅ Firebase 已连接');
+      document.getElementById('orderCount').style.color = '#4CAF50';
+    } else {
+      console.log('❌ Firebase 未连接');
+      document.getElementById('orderCount').style.color = '#f44336';
+    }
+  });
+
   database.ref('pos').on('value', (snapshot) => {
+    console.log('收到 Firebase 数据更新');
     const data = snapshot.val();
     if (data) {
       state.orders = data.orders ? Object.values(data.orders) : [];
+      console.log('订单数量:', state.orders.length);
       renderOrders();
       checkNewOrders();
     }
+  }, (error) => {
+    console.error('Firebase 监听错误:', error);
+    alert('Firebase 连接失败，请检查数据库规则是否已设置为公开读写');
   });
 }
 
