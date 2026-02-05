@@ -258,10 +258,25 @@ function updateTotal() {
 
 // 更新订单号显示
 function updateOrderNumber() {
-    const display = state.isAddingDrink && state.currentOrderId
-        ? `追加饮料到订单 #${String(state.orders.find(o => o.id === state.currentOrderId)?.number || '').padStart(3, '0')}`
-        : `订单号: #${String(state.orderNumber).padStart(3, '0')}`;
-    document.getElementById('orderNumber').textContent = display;
+    const container = document.getElementById('orderNumber');
+    if (state.isAddingDrink && state.currentOrderId) {
+        const orderNum = String(state.orders.find(o => o.id === state.currentOrderId)?.number || '').padStart(3, '0');
+        container.innerHTML = `
+            追加饮料到订单 #${orderNum}
+            <button onclick="exitAddDrinkMode()" style="
+                background: rgba(255,255,255,0.3);
+                border: none;
+                border-radius: 50%;
+                width: 24px;
+                height: 24px;
+                margin-left: 8px;
+                cursor: pointer;
+                font-size: 14px;
+            ">❌</button>
+        `;
+    } else {
+        container.textContent = `订单号: #${String(state.orderNumber).padStart(3, '0')}`;
+    }
 }
 
 // ========================================
