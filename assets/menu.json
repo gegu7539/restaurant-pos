@@ -1,158 +1,133 @@
 {
     "categories": [
         {
-            "id": "hot",
-            "name": "热菜",
-            "icon": "🍲"
-        },
-        {
-            "id": "cold",
-            "name": "凉菜",
-            "icon": "🥗"
-        },
-        {
             "id": "staple",
             "name": "主食",
-            "icon": "🍚"
+            "icon": "🍜",
+            "type": "combo"
         },
         {
             "id": "soup",
-            "name": "汤品",
-            "icon": "🍜"
+            "name": "汤类",
+            "icon": "🍲",
+            "type": "weight"
+        },
+        {
+            "id": "friedrice",
+            "name": "炒饭",
+            "icon": "🍳",
+            "type": "combo"
         },
         {
             "id": "drink",
             "name": "饮料",
             "icon": "🥤",
+            "type": "simple",
             "isDrink": true
         }
     ],
-    "items": [
+    "comboItems": [
         {
-            "id": 1,
-            "name": "红烧肉",
-            "price": 38,
-            "category": "hot",
-            "image": "🥩"
+            "id": "mixian",
+            "name": "米线",
+            "icon": "🍜"
         },
         {
-            "id": 2,
-            "name": "鱼香肉丝",
-            "price": 28,
-            "category": "hot",
-            "image": "🍖"
+            "id": "reganmian",
+            "name": "热干面",
+            "icon": "🍝"
         },
         {
-            "id": 3,
-            "name": "宫保鸡丁",
-            "price": 32,
-            "category": "hot",
-            "image": "🍗"
+            "id": "liangpi",
+            "name": "凉皮",
+            "icon": "🥡"
         },
         {
-            "id": 4,
-            "name": "麻婆豆腐",
-            "price": 22,
-            "category": "hot",
-            "image": "🧈"
+            "id": "niujinmian",
+            "name": "牛筋面",
+            "icon": "🍜"
         },
         {
-            "id": 5,
-            "name": "糖醋里脊",
-            "price": 35,
-            "category": "hot",
-            "image": "🍖"
+            "id": "ganmianpi",
+            "name": "擀面皮",
+            "icon": "🥟"
+        }
+    ],
+    "flavorOptions": [
+        {
+            "id": "hot",
+            "name": "热拌",
+            "icon": "🔥"
         },
         {
-            "id": 6,
-            "name": "凉拌黄瓜",
-            "price": 12,
-            "category": "cold",
-            "image": "🥒"
+            "id": "cold",
+            "name": "凉拌",
+            "icon": "❄️"
         },
         {
-            "id": 7,
-            "name": "皮蛋豆腐",
-            "price": 15,
-            "category": "cold",
-            "image": "🥚"
+            "id": "soup",
+            "name": "带汤",
+            "icon": "🍲"
+        }
+    ],
+    "soupItems": [
+        {
+            "id": "yangza",
+            "name": "羊杂(羊肚/羊头脸)",
+            "price": 50,
+            "unit": "斤",
+            "icon": "🐑"
         },
         {
-            "id": 8,
-            "name": "口水鸡",
-            "price": 28,
-            "category": "cold",
-            "image": "🍗"
-        },
+            "id": "yangroutang",
+            "name": "羊肉汤",
+            "price": 100,
+            "unit": "斤",
+            "icon": "🍖"
+        }
+    ],
+    "drinkItems": [
         {
-            "id": 9,
-            "name": "白米饭",
-            "price": 3,
-            "category": "staple",
-            "image": "🍚"
-        },
-        {
-            "id": 10,
-            "name": "蛋炒饭",
-            "price": 15,
-            "category": "staple",
-            "image": "🍳"
-        },
-        {
-            "id": 11,
-            "name": "面条",
-            "price": 12,
-            "category": "staple",
-            "image": "🍝"
-        },
-        {
-            "id": 12,
-            "name": "紫菜蛋花汤",
-            "price": 10,
-            "category": "soup",
-            "image": "🥣"
-        },
-        {
-            "id": 13,
-            "name": "番茄蛋汤",
-            "price": 12,
-            "category": "soup",
-            "image": "🍅"
-        },
-        {
-            "id": 14,
+            "id": 101,
             "name": "可乐",
             "price": 5,
-            "category": "drink",
-            "image": "🥤"
+            "icon": "🥤"
         },
         {
-            "id": 15,
+            "id": 102,
             "name": "雪碧",
             "price": 5,
-            "category": "drink",
-            "image": "🥤"
+            "icon": "🥤"
         },
         {
-            "id": 16,
+            "id": 103,
             "name": "橙汁",
             "price": 8,
-            "category": "drink",
-            "image": "🍊"
+            "icon": "🍊"
         },
         {
-            "id": 17,
+            "id": 104,
             "name": "啤酒",
             "price": 10,
-            "category": "drink",
-            "image": "🍺"
+            "icon": "🍺"
         },
         {
-            "id": 18,
+            "id": 105,
             "name": "矿泉水",
             "price": 3,
-            "category": "drink",
-            "image": "💧"
+            "icon": "💧"
         }
+    ],
+    "priceOptions": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10
     ]
 }

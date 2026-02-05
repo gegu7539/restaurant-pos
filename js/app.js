@@ -1,21 +1,23 @@
 /**
- * 小饭馆点单系统 - 前台业务逻辑
+ * 小饭馆点单系统 - 前台业务逻辑 (v2.0 组合点单版)
  */
 
 // ========================================
 // 状态管理
 // ========================================
 const state = {
-    menu: { categories: [], items: [] },
-    currentCategory: 'hot',
+    menu: null,
+    currentCategory: 'staple',
     cart: {
-        food: [],    // 点菜区
+        food: [],    // 点菜区（主食+汤类+炒饭）
         drink: []    // 饮料区
     },
     orderNumber: 1,
-    orders: [],           // 所有订单
-    currentOrderId: null, // 当前操作的订单ID（用于追加饮料）
-    isAddingDrink: false  // 是否处于追加饮料模式
+    orders: [],
+    currentOrderId: null,
+    isAddingDrink: false,
+    currentComboType: null,  // 'staple' 或 'friedrice'
+    selectedFlavor: 'hot'
 };
 
 // ========================================
@@ -37,17 +39,6 @@ async function loadMenu() {
         state.menu = await response.json();
     } catch (error) {
         console.error('加载菜单失败:', error);
-        // 使用备用数据
-        state.menu = {
-            categories: [
-                { id: 'hot', name: '热菜', icon: '🍲' },
-                { id: 'drink', name: '饮料', icon: '🥤', isDrink: true }
-            ],
-            items: [
-                { id: 1, name: '红烧肉', price: 38, category: 'hot', image: '🥩' },
-                { id: 14, name: '可乐', price: 5, category: 'drink', image: '🥤' }
-            ]
-        };
     }
 }
 
@@ -68,7 +59,6 @@ function saveState() {
         orders: state.orders
     };
     localStorage.setItem('restaurant_pos_state', JSON.stringify(data));
-    // 触发 storage 事件，通知厨房页面
     window.dispatchEvent(new StorageEvent('storage', {
         key: 'restaurant_pos_state',
         newValue: JSON.stringify(data)
@@ -82,8 +72,6 @@ function saveState() {
 // 渲染分类导航
 function renderCategories() {
     const container = document.getElementById('categories');
-
-    // 如果是追加饮料模式，只显示饮料分类
     const categories = state.isAddingDrink
         ? state.menu.categories.filter(c => c.isDrink)
         : state.menu.categories;
@@ -100,15 +88,47 @@ function renderCategories() {
 // 渲染菜品网格
 function renderMenu() {
     const container = document.getElementById('menuGrid');
-    const items = state.menu.items.filter(item => item.category === state.currentCategory);
+    const category = state.menu.categories.find(c => c.id === state.currentCategory);
 
-    container.innerHTML = items.map((item, index) => `
-    <div class="menu-item" onclick="addToCart(${item.id})" style="animation-delay: ${index * 0.05}s">
-      <span class="emoji">${item.image}</span>
-      <span class="name">${item.name}</span>
-      <span class="price">¥${item.price}</span>
-    </div>
-  `).join('');
+    if (!category) {
+        container.innerHTML = '<p style="text-align: center; color: #999;">暂无菜品</p>';
+        return;
+    }
+
+    let html = '';
+
+    if (category.type === 'combo') {
+        // 组合类（主食/炒饭）：显示一个大按钮打开弹窗
+        const title = category.id === 'staple' ? '点主食' : '点炒饭';
+        html = `
+      <div class="menu-item" onclick="openComboModal('${category.id}')" style="grid-column: span 2;">
+        <span class="emoji" style="font-size: 4rem;">${category.icon}</span>
+        <span class="name" style="font-size: 1.2rem;">${title}</span>
+        <span class="price" style="font-size: 0.9rem; color: #666;">可任意组合 • 1-10元</span>
+      </div>
+    `;
+    } else if (category.type === 'weight') {
+        // 按斤计价（汤类）：显示一个大按钮打开弹窗
+        html = `
+      <div class="menu-item" onclick="openSoupModal()" style="grid-column: span 2;">
+        <span class="emoji" style="font-size: 4rem;">${category.icon}</span>
+        <span class="name" style="font-size: 1.2rem;">点汤类</span>
+        <span class="price" style="font-size: 0.9rem; color: #666;">按斤计价 • 可自由搭配</span>
+      </div>
+    `;
+    } else if (category.type === 'simple' || category.isDrink) {
+        // 简单类（饮料）：直接显示菜品卡片
+        const items = state.menu.drinkItems || [];
+        html = items.map((item, index) => `
+      <div class="menu-item" onclick="addSimpleToCart(${item.id})" style="animation-delay: ${index * 0.05}s">
+        <span class="emoji">${item.icon}</span>
+        <span class="name">${item.name}</span>
+        <span class="price">¥${item.price}</span>
+      </div>
+    `).join('');
+    }
+
+    container.innerHTML = html;
 }
 
 // 渲染购物车
@@ -122,7 +142,6 @@ function renderCart() {
       <div class="cart-empty">
         <div class="icon">🛒</div>
         <p>${state.isAddingDrink ? '请选择要追加的饮料' : '购物车是空的'}</p>
-        <p>${state.isAddingDrink ? '点击饮料添加到订单' : '点击菜品添加到购物车'}</p>
       </div>
     `;
         updateTotal();
@@ -139,7 +158,7 @@ function renderCart() {
         html += `
       <div class="cart-section">
         <div class="section-header">
-          <span class="section-title">🍲 点菜区</span>
+          <span class="section-title">🍜 点菜区</span>
           <div class="section-subtotal">
             <span>¥${calculateSubtotal(foodItems)}</span>
             ${state.currentOrderId ? `
@@ -151,7 +170,7 @@ function renderCart() {
           </div>
         </div>
         <div class="section-items">
-          ${foodItems.length > 0 ? foodItems.map(item => renderCartItem(item, 'food')).join('') :
+          ${foodItems.length > 0 ? foodItems.map((item, idx) => renderCartItem(item, 'food', idx)).join('') :
                 '<p style="text-align: center; color: #999; padding: 10px;">暂无菜品</p>'}
         </div>
       </div>
@@ -178,7 +197,7 @@ function renderCart() {
           </div>
         </div>
         <div class="section-items">
-          ${drinkItems.length > 0 ? drinkItems.map(item => renderCartItem(item, 'drink')).join('') :
+          ${drinkItems.length > 0 ? drinkItems.map((item, idx) => renderCartItem(item, 'drink', idx)).join('') :
                 '<p style="text-align: center; color: #999; padding: 10px;">暂无饮料</p>'}
         </div>
       </div>
@@ -190,20 +209,31 @@ function renderCart() {
 }
 
 // 渲染单个购物车项
-function renderCartItem(item, type) {
+function renderCartItem(item, type, index) {
+    let detailsHtml = '';
+
+    // 如果是组合或汤类，显示详情
+    if (item.details) {
+        detailsHtml = `<div class="cart-item-details">${item.details}</div>`;
+    }
+    if (item.remark) {
+        detailsHtml += `<div class="cart-item-remark">备注: ${item.remark}</div>`;
+    }
+
     return `
     <div class="cart-item">
-      <span class="emoji">${item.image}</span>
+      <span class="emoji">${item.icon || '🍽️'}</span>
       <div class="info">
         <div class="name">${item.name}</div>
         <div class="price">¥${item.price}</div>
+        ${detailsHtml}
       </div>
       <div class="quantity-control">
-        <button class="qty-btn" onclick="changeQuantity(${item.id}, '${type}', -1)">−</button>
+        <button class="qty-btn" onclick="changeQuantity(${index}, '${type}', -1)">−</button>
         <span class="quantity">${item.quantity}</span>
-        <button class="qty-btn" onclick="changeQuantity(${item.id}, '${type}', 1)">+</button>
+        <button class="qty-btn" onclick="changeQuantity(${index}, '${type}', 1)">+</button>
       </div>
-      <button class="delete-btn" onclick="removeFromCart(${item.id}, '${type}')">🗑️</button>
+      <button class="delete-btn" onclick="removeFromCart(${index}, '${type}')">🗑️</button>
     </div>
   `;
 }
@@ -222,13 +252,8 @@ function updateTotal() {
     document.getElementById('totalAmount').textContent = `¥${total}`;
     document.getElementById('submitBtn').disabled = total === 0;
 
-    // 更新按钮文字
     const btn = document.getElementById('submitBtn');
-    if (state.isAddingDrink) {
-        btn.textContent = '确认追加饮料';
-    } else {
-        btn.textContent = '提交订单';
-    }
+    btn.textContent = state.isAddingDrink ? '确认追加饮料' : '提交订单';
 }
 
 // 更新订单号显示
@@ -240,40 +265,228 @@ function updateOrderNumber() {
 }
 
 // ========================================
-// 交互函数
+// 组合点单弹窗
 // ========================================
 
-// 选择分类
-function selectCategory(categoryId) {
-    state.currentCategory = categoryId;
-    renderCategories();
-    renderMenu();
+function openComboModal(type) {
+    state.currentComboType = type;
+    state.selectedFlavor = 'hot';
+
+    const modal = document.getElementById('comboModal');
+    const title = document.getElementById('comboModalTitle');
+    const flavorSection = document.getElementById('flavorSection');
+
+    title.textContent = type === 'staple' ? '🍜 主食组合' : '🍳 炒饭组合';
+
+    // 主食显示口味选项，炒饭不显示
+    flavorSection.style.display = type === 'staple' ? 'block' : 'none';
+
+    // 渲染食材选择
+    renderComboItems();
+    renderFlavorOptions();
+    updateComboSubtotal();
+
+    // 重置其他选项
+    document.querySelector('input[name="spicy"][value="no"]').checked = true;
+    document.getElementById('comboRemark').value = '';
+
+    modal.classList.add('active');
 }
 
-// 添加到购物车
-function addToCart(itemId) {
-    const menuItem = state.menu.items.find(i => i.id === itemId);
-    if (!menuItem) return;
+function renderComboItems() {
+    const container = document.getElementById('comboItems');
+    const items = state.menu.comboItems;
+    const prices = state.menu.priceOptions;
 
-    const category = state.menu.categories.find(c => c.id === menuItem.category);
-    const targetCart = category?.isDrink ? 'drink' : 'food';
+    container.innerHTML = items.map(item => `
+    <div class="combo-item-row">
+      <span class="item-name">${item.icon} ${item.name}</span>
+      <select class="price-select" id="price_${item.id}" onchange="updateComboSubtotal()">
+        <option value="0">不要</option>
+        ${prices.map(p => `<option value="${p}">¥${p}</option>`).join('')}
+      </select>
+    </div>
+  `).join('');
+}
 
-    // 如果是追加饮料模式，只允许添加饮料
-    if (state.isAddingDrink && targetCart !== 'drink') {
-        alert('追加模式下只能添加饮料');
+function renderFlavorOptions() {
+    const container = document.getElementById('flavorOptions');
+    const options = state.menu.flavorOptions;
+
+    container.innerHTML = options.map(opt => `
+    <button class="flavor-btn ${opt.id === state.selectedFlavor ? 'active' : ''}"
+            onclick="selectFlavor('${opt.id}')">
+      ${opt.icon} ${opt.name}
+    </button>
+  `).join('');
+}
+
+function selectFlavor(flavorId) {
+    state.selectedFlavor = flavorId;
+    renderFlavorOptions();
+}
+
+function updateComboSubtotal() {
+    const items = state.menu.comboItems;
+    let total = 0;
+
+    items.forEach(item => {
+        const select = document.getElementById(`price_${item.id}`);
+        total += parseInt(select.value) || 0;
+    });
+
+    document.getElementById('comboSubtotal').textContent = `¥${total}`;
+}
+
+function addComboToCart() {
+    const items = state.menu.comboItems;
+    const selectedItems = [];
+    let total = 0;
+
+    items.forEach(item => {
+        const select = document.getElementById(`price_${item.id}`);
+        const price = parseInt(select.value) || 0;
+        if (price > 0) {
+            selectedItems.push({ name: item.name, price, icon: item.icon });
+            total += price;
+        }
+    });
+
+    if (selectedItems.length === 0) {
+        alert('请至少选择一种食材');
         return;
     }
 
-    const existingItem = state.cart[targetCart].find(i => i.id === itemId);
+    // 获取口味、辣度、备注
+    const flavor = state.currentComboType === 'staple'
+        ? state.menu.flavorOptions.find(f => f.id === state.selectedFlavor)
+        : null;
+    const spicy = document.querySelector('input[name="spicy"]:checked').value === 'yes';
+    const remark = document.getElementById('comboRemark').value.trim();
 
-    if (existingItem) {
-        existingItem.quantity++;
+    // 构建名称和详情
+    const itemNames = selectedItems.map(i => `${i.price}元${i.name}`).join('+');
+    const typeName = state.currentComboType === 'staple' ? '主食' : '炒饭';
+    let details = '';
+    if (flavor) details += flavor.name;
+    if (spicy) details += (details ? '，' : '') + '加辣🌶️';
+
+    const cartItem = {
+        id: Date.now(),
+        name: `${typeName}: ${itemNames}`,
+        price: total,
+        quantity: 1,
+        icon: state.currentComboType === 'staple' ? '🍜' : '🍳',
+        details: details,
+        remark: remark,
+        type: state.currentComboType
+    };
+
+    state.cart.food.push(cartItem);
+    renderCart();
+    closeComboModal();
+}
+
+function closeComboModal() {
+    document.getElementById('comboModal').classList.remove('active');
+}
+
+// ========================================
+// 汤类点单弹窗
+// ========================================
+
+function openSoupModal() {
+    const container = document.getElementById('soupItems');
+    const items = state.menu.soupItems;
+
+    container.innerHTML = items.map(item => `
+    <div class="soup-item-row">
+      <div class="item-info">
+        <span class="item-name">${item.icon} ${item.name}</span>
+        <span class="item-price">¥${item.price}/${item.unit}</span>
+      </div>
+      <input type="number" class="weight-input" id="weight_${item.id}" 
+             min="0" step="0.1" value="0" placeholder="0"
+             onchange="updateSoupSubtotal()">
+      <span class="unit">${item.unit}</span>
+    </div>
+  `).join('');
+
+    updateSoupSubtotal();
+    document.getElementById('soupModal').classList.add('active');
+}
+
+function updateSoupSubtotal() {
+    const items = state.menu.soupItems;
+    let total = 0;
+
+    items.forEach(item => {
+        const input = document.getElementById(`weight_${item.id}`);
+        const weight = parseFloat(input.value) || 0;
+        total += weight * item.price;
+    });
+
+    document.getElementById('soupSubtotal').textContent = `¥${total.toFixed(0)}`;
+}
+
+function addSoupToCart() {
+    const items = state.menu.soupItems;
+    const selectedItems = [];
+    let total = 0;
+
+    items.forEach(item => {
+        const input = document.getElementById(`weight_${item.id}`);
+        const weight = parseFloat(input.value) || 0;
+        if (weight > 0) {
+            selectedItems.push({ name: item.name, weight, price: item.price, icon: item.icon });
+            total += weight * item.price;
+        }
+    });
+
+    if (selectedItems.length === 0) {
+        alert('请至少选择一种汤');
+        return;
+    }
+
+    const itemNames = selectedItems.map(i => `${i.name}${i.weight}斤`).join('+');
+
+    const cartItem = {
+        id: Date.now(),
+        name: `汤类: ${itemNames}`,
+        price: Math.round(total),
+        quantity: 1,
+        icon: '🍲',
+        details: selectedItems.map(i => `${i.name} ${i.weight}斤×¥${i.price}=¥${i.weight * i.price}`).join('，'),
+        type: 'soup'
+    };
+
+    state.cart.food.push(cartItem);
+    renderCart();
+    closeSoupModal();
+}
+
+function closeSoupModal() {
+    document.getElementById('soupModal').classList.remove('active');
+}
+
+// ========================================
+// 简单菜品（饮料）
+// ========================================
+
+function addSimpleToCart(itemId) {
+    const item = state.menu.drinkItems.find(i => i.id === itemId);
+    if (!item) return;
+
+    const existingIndex = state.cart.drink.findIndex(i => i.id === itemId);
+
+    if (existingIndex >= 0) {
+        state.cart.drink[existingIndex].quantity++;
     } else {
-        state.cart[targetCart].push({
-            id: menuItem.id,
-            name: menuItem.name,
-            price: menuItem.price,
-            image: menuItem.image,
+        state.cart.drink.push({
+            id: item.id,
+            name: item.name,
+            price: item.price,
+            icon: item.icon,
             quantity: 1
         });
     }
@@ -281,27 +494,38 @@ function addToCart(itemId) {
     renderCart();
 }
 
-// 修改数量
-function changeQuantity(itemId, type, delta) {
-    const item = state.cart[type].find(i => i.id === itemId);
+// ========================================
+// 购物车操作
+// ========================================
+
+function selectCategory(categoryId) {
+    state.currentCategory = categoryId;
+    renderCategories();
+    renderMenu();
+}
+
+function changeQuantity(index, type, delta) {
+    const item = state.cart[type][index];
     if (!item) return;
 
     item.quantity += delta;
 
     if (item.quantity <= 0) {
-        removeFromCart(itemId, type);
+        removeFromCart(index, type);
     } else {
         renderCart();
     }
 }
 
-// 从购物车移除
-function removeFromCart(itemId, type) {
-    state.cart[type] = state.cart[type].filter(i => i.id !== itemId);
+function removeFromCart(index, type) {
+    state.cart[type].splice(index, 1);
     renderCart();
 }
 
-// 提交订单
+// ========================================
+// 订单提交
+// ========================================
+
 function submitOrder() {
     const foodItems = state.cart.food;
     const drinkItems = state.cart.drink;
@@ -312,7 +536,6 @@ function submitOrder() {
         // 追加饮料模式
         const order = state.orders.find(o => o.id === state.currentOrderId);
         if (order) {
-            // 合并饮料
             drinkItems.forEach(newItem => {
                 const existing = order.drinks.find(d => d.id === newItem.id);
                 if (existing) {
@@ -325,8 +548,6 @@ function submitOrder() {
             order.total = order.foodTotal + order.drinkTotal;
             order.updatedAt = new Date().toISOString();
         }
-
-        // 退出追加模式
         exitAddDrinkMode();
     } else {
         // 新订单
@@ -348,7 +569,6 @@ function submitOrder() {
         state.orderNumber++;
     }
 
-    // 保存并清空购物车
     saveState();
     state.cart = { food: [], drink: [] };
     renderCart();
@@ -357,7 +577,6 @@ function submitOrder() {
     alert(state.isAddingDrink ? '饮料追加成功！' : '订单提交成功！');
 }
 
-// 切换支付状态
 function togglePayment(type) {
     if (!state.currentOrderId) return;
 
@@ -374,7 +593,10 @@ function togglePayment(type) {
     renderCart();
 }
 
-// 显示订单历史
+// ========================================
+// 订单历史
+// ========================================
+
 function showOrderHistory() {
     const container = document.getElementById('ordersList');
     const pendingOrders = state.orders.filter(o => o.status !== 'completed');
@@ -396,20 +618,16 @@ function showOrderHistory() {
     document.getElementById('historyModal').classList.add('active');
 }
 
-// 选择订单追加饮料
 function selectOrderForDrink(orderId) {
     const order = state.orders.find(o => o.id === orderId);
     if (!order) return;
 
-    // 进入追加饮料模式
     state.isAddingDrink = true;
     state.currentOrderId = orderId;
     state.cart = {
         food: [...order.foods],
         drink: [...order.drinks]
     };
-
-    // 切换到饮料分类
     state.currentCategory = 'drink';
 
     closeHistoryModal();
@@ -419,12 +637,11 @@ function selectOrderForDrink(orderId) {
     updateOrderNumber();
 }
 
-// 退出追加饮料模式
 function exitAddDrinkMode() {
     state.isAddingDrink = false;
     state.currentOrderId = null;
     state.cart = { food: [], drink: [] };
-    state.currentCategory = 'hot';
+    state.currentCategory = 'staple';
 
     renderCategories();
     renderMenu();
@@ -432,12 +649,14 @@ function exitAddDrinkMode() {
     updateOrderNumber();
 }
 
-// 关闭历史订单弹窗
 function closeHistoryModal() {
     document.getElementById('historyModal').classList.remove('active');
 }
 
-// 重置订单编号
+// ========================================
+// 其他功能
+// ========================================
+
 function resetOrderNumber() {
     showConfirm('重置订单编号', '确定要将订单编号重置为 #001 吗？', () => {
         state.orderNumber = 1;
@@ -447,12 +666,10 @@ function resetOrderNumber() {
     });
 }
 
-// 打开厨房页面
 function openKitchen() {
     window.open('kitchen.html', '_blank');
 }
 
-// 确认弹窗
 function showConfirm(title, message, onConfirm) {
     document.getElementById('confirmTitle').textContent = title;
     document.getElementById('confirmMessage').textContent = message;

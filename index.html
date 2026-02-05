@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,6 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
 </head>
+
 <body>
   <div class="app-container">
     <!-- 主内容区 -->
@@ -22,29 +24,29 @@
           <button class="btn btn-danger" onclick="resetOrderNumber()">🔄 重置编号</button>
         </div>
       </header>
-      
+
       <!-- 分类导航 -->
       <nav class="categories" id="categories">
         <!-- 动态生成 -->
       </nav>
-      
+
       <!-- 菜品网格 -->
       <div class="menu-grid" id="menuGrid">
         <!-- 动态生成 -->
       </div>
     </div>
-    
+
     <!-- 购物车面板 -->
     <aside class="cart-panel">
       <div class="cart-header">
         <h2>🛒 当前订单</h2>
         <div class="order-number" id="orderNumber">订单号: #001</div>
       </div>
-      
+
       <div class="cart-content" id="cartContent">
         <!-- 动态生成 -->
       </div>
-      
+
       <div class="cart-footer">
         <div class="total-row">
           <span class="total-label">总计</span>
@@ -56,7 +58,82 @@
       </div>
     </aside>
   </div>
-  
+
+  <!-- 组合点单弹窗 -->
+  <div class="modal-overlay" id="comboModal">
+    <div class="modal combo-modal">
+      <h3 id="comboModalTitle">🍜 主食组合</h3>
+
+      <!-- 食材选择 -->
+      <div class="combo-section">
+        <h4>选择食材和份量</h4>
+        <div class="combo-items" id="comboItems">
+          <!-- 动态生成 -->
+        </div>
+      </div>
+
+      <!-- 口味选择 -->
+      <div class="combo-section" id="flavorSection">
+        <h4>口味</h4>
+        <div class="flavor-options" id="flavorOptions">
+          <!-- 动态生成 -->
+        </div>
+      </div>
+
+      <!-- 加辣选择 -->
+      <div class="combo-section">
+        <h4>辣度</h4>
+        <div class="spicy-options">
+          <label class="radio-label">
+            <input type="radio" name="spicy" value="no" checked> 不加辣
+          </label>
+          <label class="radio-label">
+            <input type="radio" name="spicy" value="yes"> 加辣 🌶️
+          </label>
+        </div>
+      </div>
+
+      <!-- 备注 -->
+      <div class="combo-section">
+        <h4>备注</h4>
+        <input type="text" id="comboRemark" class="remark-input" placeholder="如：多放醋、少盐等">
+      </div>
+
+      <!-- 小计 -->
+      <div class="combo-subtotal">
+        <span>小计：</span>
+        <span id="comboSubtotal">¥0</span>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn btn-outline" onclick="closeComboModal()">取消</button>
+        <button class="btn btn-success" onclick="addComboToCart()">加入购物车</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 汤类点单弹窗 -->
+  <div class="modal-overlay" id="soupModal">
+    <div class="modal">
+      <h3>🍲 汤类点单</h3>
+
+      <div class="soup-items" id="soupItems">
+        <!-- 动态生成 -->
+      </div>
+
+      <!-- 小计 -->
+      <div class="combo-subtotal">
+        <span>小计：</span>
+        <span id="soupSubtotal">¥0</span>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn btn-outline" onclick="closeSoupModal()">取消</button>
+        <button class="btn btn-success" onclick="addSoupToCart()">加入购物车</button>
+      </div>
+    </div>
+  </div>
+
   <!-- 订单历史弹窗 -->
   <div class="modal-overlay" id="historyModal">
     <div class="modal">
@@ -70,7 +147,7 @@
       </div>
     </div>
   </div>
-  
+
   <!-- 确认弹窗 -->
   <div class="modal-overlay" id="confirmModal">
     <div class="modal">
@@ -85,4 +162,5 @@
 
   <script src="js/app.js"></script>
 </body>
+
 </html>
