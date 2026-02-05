@@ -1,6 +1,17 @@
 /**
- * 小饭馆点单系统 - 前台业务逻辑 (v2.0 组合点单版)
+ * 小饭馆点单系统 - 前台业务逻辑 (v3.0 Firebase 同步版)
  */
+
+// ========================================
+// Firebase 配置
+// ========================================
+const firebaseConfig = {
+    databaseURL: "https://restaurant-pos-f8ce4-default-rtdb.firebaseio.com"
+};
+
+// 初始化 Firebase
+firebase.initializeApp(firebaseConfig);
+const database = firebase.database();
 
 // ========================================
 // 状态管理
@@ -9,14 +20,14 @@ const state = {
     menu: null,
     currentCategory: 'staple',
     cart: {
-        food: [],    // 点菜区（主食+汤类+炒饭）
-        drink: []    // 饮料区
+        food: [],
+        drink: []
     },
     orderNumber: 1,
     orders: [],
     currentOrderId: null,
     isAddingDrink: false,
-    currentComboType: null,  // 'staple' 或 'friedrice'
+    currentComboType: null,
     selectedFlavor: 'hot'
 };
 
@@ -25,7 +36,8 @@ const state = {
 // ========================================
 async function init() {
     await loadMenu();
-    loadState();
+    await loadStateFromFirebase();
+    listenToFirebaseChanges();
     renderCategories();
     renderMenu();
     renderCart();
@@ -42,26 +54,61 @@ async function loadMenu() {
     }
 }
 
-// 从 localStorage 加载状态
-function loadState() {
-    const saved = localStorage.getItem('restaurant_pos_state');
-    if (saved) {
-        const data = JSON.parse(saved);
-        state.orderNumber = data.orderNumber || 1;
-        state.orders = data.orders || [];
+// 从 Firebase 加载状态
+async function loadStateFromFirebase() {
+    try {
+        const snapshot = await database.ref('pos').once('value');
+        const data = snapshot.val();
+        if (data) {
+            state.orderNumber = data.orderNumber || 1;
+            state.orders = data.orders ? Object.values(data.orders) : [];
+        }
+    } catch (error) {
+        console.error('加载 Firebase 数据失败:', error);
+        // 回退到 localStorage
+        const saved = localStorage.getItem('restaurant_pos_state');
+        if (saved) {
+            const data = JSON.parse(saved);
+            state.orderNumber = data.orderNumber || 1;
+            state.orders = data.orders || [];
+        }
     }
 }
 
-// 保存状态到 localStorage
+// 监听 Firebase 实时变化
+function listenToFirebaseChanges() {
+    database.ref('pos').on('value', (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+            state.orderNumber = data.orderNumber || 1;
+            state.orders = data.orders ? Object.values(data.orders) : [];
+            if (!state.isAddingDrink) {
+                updateOrderNumber();
+            }
+        }
+    });
+}
+
+// 保存状态到 Firebase
 function saveState() {
+    const ordersObj = {};
+    state.orders.forEach(order => {
+        ordersObj[order.id] = order;
+    });
+
     const data = {
         orderNumber: state.orderNumber,
-        orders: state.orders
+        orders: ordersObj
     };
-    localStorage.setItem('restaurant_pos_state', JSON.stringify(data));
-    window.dispatchEvent(new StorageEvent('storage', {
-        key: 'restaurant_pos_state',
-        newValue: JSON.stringify(data)
+
+    database.ref('pos').set(data).catch(error => {
+        console.error('保存到 Firebase 失败:', error);
+    });
+
+    // 同时保存到 localStorage 作为备份
+    localStorage.setItem('restaurant_pos_state', JSON.stringify({
+        orderNumber: state.orderNumber,
+        orders: state.orders
     }));
 }
 
@@ -69,7 +116,6 @@ function saveState() {
 // 渲染函数
 // ========================================
 
-// 渲染分类导航
 function renderCategories() {
     const container = document.getElementById('categories');
     const categories = state.isAddingDrink
@@ -85,7 +131,6 @@ function renderCategories() {
   `).join('');
 }
 
-// 渲染菜品网格
 function renderMenu() {
     const container = document.getElementById('menuGrid');
     const category = state.menu.categories.find(c => c.id === state.currentCategory);
@@ -98,7 +143,6 @@ function renderMenu() {
     let html = '';
 
     if (category.type === 'combo') {
-        // 组合类（主食/炒饭）：显示一个大按钮打开弹窗
         const title = category.id === 'staple' ? '点主食' : '点炒饭';
         html = `
       <div class="menu-item" onclick="openComboModal('${category.id}')" style="grid-column: span 2;">
@@ -108,7 +152,6 @@ function renderMenu() {
       </div>
     `;
     } else if (category.type === 'weight') {
-        // 按斤计价（汤类）：显示一个大按钮打开弹窗
         html = `
       <div class="menu-item" onclick="openSoupModal()" style="grid-column: span 2;">
         <span class="emoji" style="font-size: 4rem;">${category.icon}</span>
@@ -117,7 +160,6 @@ function renderMenu() {
       </div>
     `;
     } else if (category.type === 'simple' || category.isDrink) {
-        // 简单类（饮料）：直接显示菜品卡片
         const items = state.menu.drinkItems || [];
         html = items.map((item, index) => `
       <div class="menu-item" onclick="addSimpleToCart(${item.id})" style="animation-delay: ${index * 0.05}s">
@@ -131,7 +173,6 @@ function renderMenu() {
     container.innerHTML = html;
 }
 
-// 渲染购物车
 function renderCart() {
     const container = document.getElementById('cartContent');
     const foodItems = state.cart.food;
@@ -150,7 +191,6 @@ function renderCart() {
 
     let html = '';
 
-    // 点菜区
     if (foodItems.length > 0 || !state.isAddingDrink) {
         const foodPaid = state.currentOrderId ?
             (state.orders.find(o => o.id === state.currentOrderId)?.foodPaid || false) : false;
@@ -177,7 +217,6 @@ function renderCart() {
     `;
     }
 
-    // 饮料区
     if (drinkItems.length > 0 || state.isAddingDrink) {
         const drinkPaid = state.currentOrderId ?
             (state.orders.find(o => o.id === state.currentOrderId)?.drinkPaid || false) : false;
@@ -208,11 +247,8 @@ function renderCart() {
     updateTotal();
 }
 
-// 渲染单个购物车项
 function renderCartItem(item, type, index) {
     let detailsHtml = '';
-
-    // 如果是组合或汤类，显示详情
     if (item.details) {
         detailsHtml = `<div class="cart-item-details">${item.details}</div>`;
     }
@@ -238,12 +274,10 @@ function renderCartItem(item, type, index) {
   `;
 }
 
-// 计算小计
 function calculateSubtotal(items) {
     return items.reduce((sum, item) => sum + item.price * item.quantity, 0);
 }
 
-// 更新总金额
 function updateTotal() {
     const foodTotal = calculateSubtotal(state.cart.food);
     const drinkTotal = calculateSubtotal(state.cart.drink);
@@ -256,7 +290,6 @@ function updateTotal() {
     btn.textContent = state.isAddingDrink ? '确认追加饮料' : '提交订单';
 }
 
-// 更新订单号显示
 function updateOrderNumber() {
     const container = document.getElementById('orderNumber');
     if (state.isAddingDrink && state.currentOrderId) {
@@ -292,16 +325,12 @@ function openComboModal(type) {
     const flavorSection = document.getElementById('flavorSection');
 
     title.textContent = type === 'staple' ? '🍜 主食组合' : '🍳 炒饭组合';
-
-    // 主食显示口味选项，炒饭不显示
     flavorSection.style.display = type === 'staple' ? 'block' : 'none';
 
-    // 渲染食材选择
     renderComboItems();
     renderFlavorOptions();
     updateComboSubtotal();
 
-    // 重置其他选项
     document.querySelector('input[name="spicy"][value="no"]').checked = true;
     document.getElementById('comboRemark').value = '';
 
@@ -344,12 +373,10 @@ function selectFlavor(flavorId) {
 function updateComboSubtotal() {
     const items = state.menu.comboItems;
     let total = 0;
-
     items.forEach(item => {
         const select = document.getElementById(`price_${item.id}`);
         total += parseInt(select.value) || 0;
     });
-
     document.getElementById('comboSubtotal').textContent = `¥${total}`;
 }
 
@@ -372,14 +399,12 @@ function addComboToCart() {
         return;
     }
 
-    // 获取口味、辣度、备注
     const flavor = state.currentComboType === 'staple'
         ? state.menu.flavorOptions.find(f => f.id === state.selectedFlavor)
         : null;
     const spicy = document.querySelector('input[name="spicy"]:checked').value === 'yes';
     const remark = document.getElementById('comboRemark').value.trim();
 
-    // 构建名称和详情
     const itemNames = selectedItems.map(i => `${i.price}元${i.name}`).join('+');
     const typeName = state.currentComboType === 'staple' ? '主食' : '炒饭';
     let details = '';
@@ -434,13 +459,11 @@ function openSoupModal() {
 function updateSoupSubtotal() {
     const items = state.menu.soupItems;
     let total = 0;
-
     items.forEach(item => {
         const input = document.getElementById(`weight_${item.id}`);
         const weight = parseFloat(input.value) || 0;
         total += weight * item.price;
     });
-
     document.getElementById('soupSubtotal').textContent = `¥${total.toFixed(0)}`;
 }
 
@@ -548,7 +571,6 @@ function submitOrder() {
     if (foodItems.length === 0 && drinkItems.length === 0) return;
 
     if (state.isAddingDrink && state.currentOrderId) {
-        // 追加饮料模式
         const order = state.orders.find(o => o.id === state.currentOrderId);
         if (order) {
             drinkItems.forEach(newItem => {
@@ -565,7 +587,6 @@ function submitOrder() {
         }
         exitAddDrinkMode();
     } else {
-        // 新订单
         const order = {
             id: Date.now(),
             number: state.orderNumber,
@@ -699,7 +720,6 @@ function closeConfirmModal() {
     document.getElementById('confirmModal').classList.remove('active');
 }
 
-// 移动端收起/展开购物车
 function toggleCart() {
     const panel = document.getElementById('cartPanel');
     const btn = panel.querySelector('.cart-toggle-btn');

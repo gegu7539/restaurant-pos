@@ -1,6 +1,17 @@
 /**
- * 小饭馆点单系统 - 厨房显示逻辑 (v2.0)
+ * 小饭馆点单系统 - 厨房显示逻辑 (v3.0 Firebase 同步版)
  */
+
+// ========================================
+// Firebase 配置
+// ========================================
+const firebaseConfig = {
+  databaseURL: "https://restaurant-pos-f8ce4-default-rtdb.firebaseio.com"
+};
+
+// 初始化 Firebase
+firebase.initializeApp(firebaseConfig);
+const database = firebase.database();
 
 // ========================================
 // 状态管理
@@ -14,40 +25,32 @@ const state = {
 // 初始化
 // ========================================
 function init() {
-  loadOrders();
   renderOrders();
+  listenToFirebaseChanges();
+}
 
-  // 监听 storage 变化实现实时同步
-  window.addEventListener('storage', (e) => {
-    if (e.key === 'restaurant_pos_state') {
-      loadOrders();
+// 监听 Firebase 实时变化
+function listenToFirebaseChanges() {
+  database.ref('pos').on('value', (snapshot) => {
+    const data = snapshot.val();
+    if (data) {
+      state.orders = data.orders ? Object.values(data.orders) : [];
       renderOrders();
       checkNewOrders();
     }
   });
-
-  // 定时检查更新（备用方案）
-  setInterval(() => {
-    loadOrders();
-    renderOrders();
-  }, 3000);
 }
 
-// 加载订单
-function loadOrders() {
-  const saved = localStorage.getItem('restaurant_pos_state');
-  if (saved) {
-    const data = JSON.parse(saved);
-    state.orders = data.orders || [];
-  }
-}
-
-// 保存订单
+// 保存订单到 Firebase
 function saveOrders() {
-  const saved = localStorage.getItem('restaurant_pos_state');
-  const data = saved ? JSON.parse(saved) : { orderNumber: 1, orders: [] };
-  data.orders = state.orders;
-  localStorage.setItem('restaurant_pos_state', JSON.stringify(data));
+  const ordersObj = {};
+  state.orders.forEach(order => {
+    ordersObj[order.id] = order;
+  });
+
+  database.ref('pos/orders').set(ordersObj).catch(error => {
+    console.error('保存到 Firebase 失败:', error);
+  });
 }
 
 // ========================================
@@ -59,7 +62,7 @@ function renderOrders() {
   const pendingOrders = state.orders.filter(o => o.status !== 'completed');
 
   // 更新待处理数量
-  document.getElementById('pendingCount').textContent = `待处理: ${pendingOrders.length} 单`;
+  document.getElementById('orderCount').textContent = `待处理: ${pendingOrders.length} 单`;
 
   if (pendingOrders.length === 0) {
     container.innerHTML = `
@@ -88,7 +91,7 @@ function renderOrderCard(order) {
       </div>
       
       <div class="order-card-body">
-        ${order.foods.length > 0 ? `
+        ${order.foods && order.foods.length > 0 ? `
           <div class="order-section">
             <div class="order-section-title">
               <span>🍜 点菜</span>
@@ -112,7 +115,7 @@ function renderOrderCard(order) {
           </div>
         ` : ''}
         
-        ${order.drinks.length > 0 ? `
+        ${order.drinks && order.drinks.length > 0 ? `
           <div class="order-section">
             <div class="order-section-title">
               <span>🥤 饮料</span>
@@ -160,7 +163,6 @@ function togglePayment(orderId, type) {
   }
 
   saveOrders();
-  renderOrders();
 }
 
 function completeOrder(orderId) {
@@ -171,7 +173,6 @@ function completeOrder(orderId) {
   order.completedAt = new Date().toISOString();
 
   saveOrders();
-  renderOrders();
 }
 
 // ========================================
@@ -190,7 +191,6 @@ function checkNewOrders() {
 }
 
 function playNotificationSound() {
-  // 使用 Web Audio API 播放提示音
   try {
     const audioContext = new (window.AudioContext || window.webkitAudioContext)();
     const oscillator = audioContext.createOscillator();
