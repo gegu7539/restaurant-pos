@@ -40,13 +40,15 @@ const ACCESS_PASSWORD = '474679';
 async function init() {
     // 全局错误捕获，防止白屏
     window.onerror = function (msg, url, line, col, error) {
-        document.body.innerHTML += `
-            <div style="position:fixed;top:0;left:0;right:0;background:red;color:white;padding:20px;z-index:9999;">
-                <h3>⚠️ 系统发生错误</h3>
-                <p>${msg}</p>
-                <small>${url}:${line}:${col}</small>
-            </div>
+        const div = document.createElement('div');
+        div.style.cssText = 'position:fixed;top:0;left:0;right:0;background:rgba(255,0,0,0.9);color:white;padding:20px;z-index:9999;';
+        div.innerHTML = `
+            <h3>⚠️ 系统发生错误</h3>
+            <p>${msg}</p>
+            <small>${url}:${line}:${col}</small>
+            <button onclick="this.parentElement.remove()" style="float:right;background:white;color:red;border:none;padding:5px 10px;">❌ 关闭</button>
         `;
+        document.body.appendChild(div);
         return false;
     };
 
@@ -700,10 +702,11 @@ function showOrderHistory() {
     } else {
         container.innerHTML = list.map(order => {
             if (order.isSeparator) {
+                // 确保截断标记的时间显示正确
                 return `<div style="text-align: center; color: #999; margin: 10px 0; font-size: 0.8rem;">${order.separatorText}</div>`;
             }
             return `
-      <div class="order-list-item" onclick="selectOrderForDrink(${order.id})">
+      <div class="order-list-item" onclick="selectOrderForDrink('${order.id}')">
         <span>#${String(order.number).padStart(3, '0')}</span>
         <span>¥${order.total}</span>
         <span style="font-size: 0.8rem; color: #999;">
@@ -716,12 +719,26 @@ function showOrderHistory() {
     document.getElementById('historyModal').classList.add('active');
 }
 
+function clearOrderHistory() {
+    showConfirm('清空历史订单', '确定要清空所有已完成的历史订单吗？（未完成的订单会保留）', () => {
+        // 保留未完成的订单
+        const pendingOrders = state.orders.filter(o => o.status !== 'completed');
+        state.orders = pendingOrders;
+        saveState();
+        showOrderHistory(); // 刷新显示
+        updateOrderNumber();
+        alert('历史订单已清空！');
+    });
+}
+
 function selectOrderForDrink(orderId) {
-    const order = state.orders.find(o => o.id === orderId);
+    // 兼容字符串和数字类型的 ID
+    const id = Number(orderId);
+    const order = state.orders.find(o => o.id === id);
     if (!order) return;
 
     state.isAddingDrink = true;
-    state.currentOrderId = orderId;
+    state.currentOrderId = id;
     state.cart = {
         food: [...order.foods],
         drink: [...order.drinks]
