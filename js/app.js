@@ -34,7 +34,20 @@ const state = {
 // ========================================
 // 初始化
 // ========================================
+const ACCESS_PASSWORD = '474679';
+
 async function init() {
+    // 检查是否已验证
+    if (sessionStorage.getItem('pos_authenticated') !== 'true') {
+        const password = prompt('请输入访问密码：');
+        if (password !== ACCESS_PASSWORD) {
+            alert('密码错误！');
+            document.body.innerHTML = '<div style="text-align:center;padding:100px;font-size:1.5rem;">⛔ 访问被拒绝</div>';
+            return;
+        }
+        sessionStorage.setItem('pos_authenticated', 'true');
+    }
+
     await loadMenu();
     await loadStateFromFirebase();
     listenToFirebaseChanges();
