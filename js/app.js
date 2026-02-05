@@ -12,6 +12,7 @@ const firebaseConfig = {
 // 初始化 Firebase
 firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
+const auth = firebase.auth();
 
 // ========================================
 // 状态管理
@@ -46,6 +47,15 @@ async function init() {
             return;
         }
         sessionStorage.setItem('pos_authenticated', 'true');
+    }
+
+    try {
+        await auth.signInAnonymously();
+        console.log('Firebase 匿名登录成功');
+    } catch (error) {
+        console.error('Firebase 登录失败:', error);
+        alert('系统连接失败：无法进行身份验证');
+        return;
     }
 
     await loadMenu();

@@ -12,6 +12,7 @@ const firebaseConfig = {
 // 初始化 Firebase
 firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
+const auth = firebase.auth();
 
 // ========================================
 // 状态管理
@@ -38,8 +39,28 @@ function init() {
     sessionStorage.setItem('pos_authenticated', 'true');
   }
 
-  renderOrders();
-  listenToFirebaseChanges();
+  try {
+    auth.signInAnonymously().then(() => {
+      console.log('Firebase 匿名登录成功');
+      renderOrders();
+      listenToFirebaseChanges();
+
+      // 监听 Auth 状态变化，如果掉线自动重连
+      auth.onAuthStateChanged(user => {
+        if (user) {
+          console.log('用户已登录:', user.uid);
+        } else {
+          console.log('用户未登录');
+          auth.signInAnonymously();
+        }
+      });
+    }).catch(error => {
+      console.error('Firebase 登录失败:', error);
+      alert('系统连接失败：无法进行身份验证');
+    });
+  } catch (e) {
+    console.error(e);
+  }
 }
 
 // 监听 Firebase 实时变化
