@@ -52,6 +52,17 @@ async function init() {
         return false;
     };
 
+    window.onunhandledrejection = function (event) {
+        const div = document.createElement('div');
+        div.style.cssText = 'position:fixed;top:50px;left:0;right:0;background:rgba(255,165,0,0.9);color:white;padding:20px;z-index:9999;';
+        div.innerHTML = `
+            <h3>⚠️ 异步操作错误</h3>
+            <p>${event.reason}</p>
+            <button onclick="this.parentElement.remove()" style="float:right;background:white;color:orange;border:none;padding:5px 10px;">❌ 关闭</button>
+        `;
+        document.body.appendChild(div);
+    };
+
     // 检查是否已验证
     if (sessionStorage.getItem('pos_authenticated') !== 'true') {
         const password = prompt('请输入访问密码：');
@@ -814,12 +825,7 @@ function closeConfirmModal() {
     document.getElementById('confirmModal').classList.remove('active');
 }
 
-function toggleCart() {
-    const panel = document.getElementById('cartPanel');
-    const btn = panel.querySelector('.cart-toggle-btn');
-    panel.classList.toggle('collapsed');
-    btn.textContent = panel.classList.contains('collapsed') ? '▲' : '▼';
-}
+
 
 // ========================================
 // 启动
