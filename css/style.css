@@ -676,14 +676,46 @@ body {
     bottom: 0;
     left: 0;
     right: 0;
-    height: 35vh;
-    /* 固定高度占比，防止过高 */
-    max-height: 35vh;
+    height: 30vh;
+    /* 默认高度缩小，不遮挡下单 */
+    max-height: 85vh;
+    transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    /* 平滑过渡动画 */
     border-radius: var(--radius-lg) var(--radius-lg) 0 0;
     z-index: 100;
     box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.1);
     display: flex;
     flex-direction: column;
+  }
+
+  .cart-panel.expanded {
+    height: 80vh;
+    /* 展开后高度 */
+    box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.2);
+  }
+
+  .cart-header {
+    cursor: pointer;
+    /* 提示可点击 */
+    position: relative;
+  }
+
+  /* 添加一个小箭头提示 */
+  .cart-header::after {
+    content: '▲';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 12px;
+    color: #999;
+    opacity: 0.5;
+    transition: transform 0.3s;
+  }
+
+  .cart-panel.expanded .cart-header::after {
+    transform: translate(-50%, -50%) rotate(180deg);
+    /* 展开时箭头向下 */
   }
 
   .cart-content {

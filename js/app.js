@@ -844,6 +844,11 @@ function closeConfirmModal() {
 
 
 
+function toggleCartExpand() {
+    // 切换展开/收起状态（仅移动端生效，由 CSS 控制）
+    document.getElementById('cartPanel').classList.toggle('expanded');
+}
+
 // ========================================
 // 启动
 // ========================================
