@@ -9,10 +9,9 @@ const firebaseConfig = {
     databaseURL: "https://restaurant-pos-f8ce4-default-rtdb.firebaseio.com"
 };
 
-// 初始化 Firebase
-firebase.initializeApp(firebaseConfig);
-const database = firebase.database();
-const auth = firebase.auth();
+// 初始化 Firebase 变量（延迟赋值）
+let database;
+let auth;
 
 // ========================================
 // 状态管理
@@ -75,11 +74,29 @@ async function init() {
     }
 
     try {
+        // 尝试初始化 Firebase
+        if (typeof firebase === 'undefined') {
+            throw new Error('Firebase SDK 未加载，可能是网络问题或被拦截');
+        }
+
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        database = firebase.database();
+        auth = firebase.auth();
+
         await auth.signInAnonymously();
         console.log('Firebase 匿名登录成功');
     } catch (error) {
-        console.error('Firebase 登录失败:', error);
-        alert('警告：无法连接云端数据库（可能是未开启匿名验证）。\n系统将以【离线模式】运行，数据无法同步到厨房！');
+        console.error('Firebase 初始化/登录失败:', error);
+
+        // 显示非阻塞通知而不是 alert
+        const msgDiv = document.createElement('div');
+        msgDiv.style.cssText = 'position:fixed;top:10px;left:50%;transform:translateX(-50%);background:rgba(255,165,0,0.9);color:white;padding:10px 20px;border-radius:20px;z-index:9999;font-size:14px;box-shadow:0 4px 12px rgba(0,0,0,0.2);';
+        msgDiv.innerHTML = `⚠️ 离线模式：${error.message || '无法连接云端'}`;
+        document.body.appendChild(msgDiv);
+        setTimeout(() => msgDiv.remove(), 5000);
+
         // 降级：继续执行初始化，但不监听 Firebase
         await loadMenu();
         renderCategories();

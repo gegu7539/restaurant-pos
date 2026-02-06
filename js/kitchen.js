@@ -9,10 +9,9 @@ const firebaseConfig = {
   databaseURL: "https://restaurant-pos-f8ce4-default-rtdb.firebaseio.com"
 };
 
-// 初始化 Firebase
-firebase.initializeApp(firebaseConfig);
-const database = firebase.database();
-const auth = firebase.auth();
+// 初始化 Firebase 变量（延迟赋值）
+let database;
+let auth;
 
 // ========================================
 // 状态管理
