@@ -566,6 +566,19 @@ body {
   justify-content: space-between;
   padding: var(--space-xs) 0;
   font-size: 0.95rem;
+  cursor: pointer;
+  /* 可点击 */
+  transition: opacity 0.2s;
+}
+
+.order-item.completed {
+  text-decoration: line-through;
+  opacity: 0.5;
+  color: var(--text-light);
+}
+
+.order-item:hover {
+  background: rgba(0, 0, 0, 0.02);
 }
 
 .order-card-footer {

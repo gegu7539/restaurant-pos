@@ -51,6 +51,12 @@ function init() {
   }
 
   try {
+    // 尝试初始化 Firebase
+    if (typeof firebase === 'undefined') throw new Error('Firebase SDK 未加载');
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    database = firebase.database();
+    auth = firebase.auth();
+
     auth.signInAnonymously().then(() => {
       console.log('Firebase 匿名登录成功');
       renderOrders();
@@ -177,10 +183,12 @@ function renderOrderCard(order) {
                 ${order.foodPaid ? '🟢 已付' : '🔴 未付'}
               </span>
             </div>
-            ${order.foods.map(item => `
-              <div class="order-item">
+            ${order.foods.map((item, idx) => `
+              <div class="order-item ${item.completed ? 'completed' : ''}" 
+                   onclick="toggleItemStatus(${order.id}, 'food', ${idx})"
+                   title="点击标记为已出餐">
                 <span>${item.icon || '🍽️'} ${item.name} ×${item.quantity}</span>
-                <span>¥${item.price * item.quantity}</span>
+                <span>${item.completed ? '✅' : ''} ¥${item.price * item.quantity}</span>
               </div>
               ${item.details ? `<div style="font-size: 0.8rem; color: #666; margin-left: 24px;">${item.details}</div>` : ''}
               ${item.remark ? `<div style="font-size: 0.75rem; color: #4ECDC4; margin-left: 24px; font-style: italic;">备注: ${item.remark}</div>` : ''}
@@ -201,10 +209,12 @@ function renderOrderCard(order) {
                 ${order.drinkPaid ? '🟢 已付' : '🔴 未付'}
               </span>
             </div>
-            ${order.drinks.map(item => `
-              <div class="order-item">
+            ${order.drinks.map((item, idx) => `
+              <div class="order-item ${item.completed ? 'completed' : ''}"
+                   onclick="toggleItemStatus(${order.id}, 'drink', ${idx})"
+                   title="点击标记为已出餐">
                 <span>${item.icon || '🥤'} ${item.name} ×${item.quantity}</span>
-                <span>¥${item.price * item.quantity}</span>
+                <span>${item.completed ? '✅' : ''} ¥${item.price * item.quantity}</span>
               </div>
             `).join('')}
             <div class="order-item" style="font-weight: 600; border-top: 1px dashed #ddd; margin-top: 8px; padding-top: 8px;">
