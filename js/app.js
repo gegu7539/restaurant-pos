@@ -3,15 +3,9 @@
  */
 
 // ========================================
-// Firebase 配置
+// 本地存储配置
 // ========================================
-const firebaseConfig = {
-    databaseURL: "https://restaurant-pos-f8ce4-default-rtdb.firebaseio.com"
-};
-
-// 初始化 Firebase 变量（延迟赋值）
-let database;
-let auth;
+const LOCAL_STORAGE_KEY = 'restaurant_pos_state';
 
 // ========================================
 // 状态管理
@@ -74,45 +68,17 @@ async function init() {
     }
 
     try {
-        // 尝试初始化 Firebase
-        if (typeof firebase === 'undefined') {
-            throw new Error('Firebase SDK 未加载，可能是网络问题或被拦截');
-        }
-
-        if (!firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
-        }
-        database = firebase.database();
-        auth = firebase.auth();
-
-        await auth.signInAnonymously();
-        console.log('Firebase 匿名登录成功');
-    } catch (error) {
-        console.error('Firebase 初始化/登录失败:', error);
-
-        // 显示非阻塞通知而不是 alert
-        const msgDiv = document.createElement('div');
-        msgDiv.style.cssText = 'position:fixed;top:10px;left:50%;transform:translateX(-50%);background:rgba(255,165,0,0.9);color:white;padding:10px 20px;border-radius:20px;z-index:9999;font-size:14px;box-shadow:0 4px 12px rgba(0,0,0,0.2);';
-        msgDiv.innerHTML = `⚠️ 离线模式：${error.message || '无法连接云端'}`;
-        document.body.appendChild(msgDiv);
-        setTimeout(() => msgDiv.remove(), 5000);
-
-        // 降级：继续执行初始化，但不监听 Firebase
         await loadMenu();
+        loadStateFromLocal(); // 之前的 loadStateFromFirebase 改名或重写
+        listenToLocalChanges(); // 之前的 listenToFirebaseChanges 改名
         renderCategories();
         renderMenu();
         renderCart();
         updateOrderNumber();
-        return;
+    } catch (e) {
+        console.error('初始化错误:', e);
+        alert('系统初始化失败，请刷新页面');
     }
-
-    await loadMenu();
-    await loadStateFromFirebase();
-    listenToFirebaseChanges();
-    renderCategories();
-    renderMenu();
-    renderCart();
-    updateOrderNumber();
 }
 
 // 加载菜单数据
@@ -125,78 +91,47 @@ async function loadMenu() {
     }
 }
 
-// 从 Firebase 加载状态
-async function loadStateFromFirebase() {
+// 从 LocalStorage 加载状态
+function loadStateFromLocal() {
     try {
-        const snapshot = await database.ref('pos').once('value');
-        const data = snapshot.val();
-        if (data) {
-            state.orderNumber = data.orderNumber || 1;
-            state.orders = data.orders ? Object.values(data.orders) : [];
-        }
-    } catch (error) {
-        console.error('加载 Firebase 数据失败:', error);
-        // 回退到 localStorage
-        const saved = localStorage.getItem('restaurant_pos_state');
+        const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
         if (saved) {
             const data = JSON.parse(saved);
             state.orderNumber = data.orderNumber || 1;
             state.orders = data.orders || [];
         }
+    } catch (error) {
+        console.error('加载本地数据失败:', error);
     }
 }
 
-// 监听 Firebase 实时变化
-function listenToFirebaseChanges() {
-    console.log('开始监听 Firebase...');
+// 监听 LocalStorage 变化 (用于多窗口同步)
+function listenToLocalChanges() {
+    window.addEventListener('storage', (e) => {
+        if (e.key === LOCAL_STORAGE_KEY && e.newValue) {
+            console.log('检测到数据更新，同步中...');
+            const data = JSON.parse(e.newValue);
+            state.orderNumber = data.orderNumber || state.orderNumber;
+            state.orders = data.orders || [];
 
-    // 监听连接状态
-    database.ref('.info/connected').on('value', (snap) => {
-        if (snap.val() === true) {
-            console.log('✅ Firebase 已连接');
-        } else {
-            console.log('❌ Firebase 未连接');
-        }
-    });
-
-    database.ref('pos').on('value', (snapshot) => {
-        console.log('收到 Firebase 数据更新');
-        const data = snapshot.val();
-        if (data) {
-            state.orderNumber = data.orderNumber || 1;
-            state.orders = data.orders ? Object.values(data.orders) : [];
-            console.log('订单数量:', state.orders.length);
+            // 刷新界面
             if (!state.isAddingDrink) {
                 updateOrderNumber();
             }
+            if (document.getElementById('historyModal').classList.contains('active')) {
+                showOrderHistory();
+            }
         }
-    }, (error) => {
-        console.error('Firebase 监听错误:', error);
-        alert('Firebase 连接失败！请检查数据库规则。\n\n请在 Firebase Console 设置规则为：\n{\n  "rules": {\n    ".read": true,\n    ".write": true\n  }\n}');
     });
 }
 
-// 保存状态到 Firebase
+// 保存状态到 LocalStorage
 function saveState() {
-    const ordersObj = {};
-    state.orders.forEach(order => {
-        ordersObj[order.id] = order;
-    });
-
     const data = {
         orderNumber: state.orderNumber,
-        orders: ordersObj
-    };
-
-    database.ref('pos').set(data).catch(error => {
-        console.error('保存到 Firebase 失败:', error);
-    });
-
-    // 同时保存到 localStorage 作为备份
-    localStorage.setItem('restaurant_pos_state', JSON.stringify({
-        orderNumber: state.orderNumber,
         orders: state.orders
-    }));
+    };
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data));
 }
 
 // ========================================

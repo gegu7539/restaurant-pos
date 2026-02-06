@@ -3,22 +3,17 @@
  */
 
 // ========================================
-// Firebase 配置
+// 本地存储配置
 // ========================================
-const firebaseConfig = {
-  databaseURL: "https://restaurant-pos-f8ce4-default-rtdb.firebaseio.com"
-};
-
-// 初始化 Firebase 变量（延迟赋值）
-let database;
-let auth;
+const LOCAL_STORAGE_KEY = 'restaurant_pos_state';
 
 // ========================================
 // 状态管理
 // ========================================
 const state = {
   orders: [],
-  lastOrderCount: 0
+  lastOrderCount: 0,
+  orderNumber: 1 // 需要同步保存此字段，否则会覆盖前台数据
 };
 
 // ========================================
@@ -50,80 +45,64 @@ function init() {
     sessionStorage.setItem('pos_authenticated', 'true');
   }
 
+  loadStateFromLocal();
+  listenToLocalChanges();
+  renderOrders();
+}
+
+// 从 LocalStorage 加载状态
+function loadStateFromLocal() {
   try {
-    // 尝试初始化 Firebase
-    if (typeof firebase === 'undefined') throw new Error('Firebase SDK 未加载');
-    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-    database = firebase.database();
-    auth = firebase.auth();
-
-    auth.signInAnonymously().then(() => {
-      console.log('Firebase 匿名登录成功');
-      renderOrders();
-      listenToFirebaseChanges();
-
-      // 监听 Auth 状态变化，如果掉线自动重连
-      auth.onAuthStateChanged(user => {
-        if (user) {
-          console.log('用户已登录:', user.uid);
-        } else {
-          console.log('用户未登录');
-          auth.signInAnonymously();
-        }
-      });
-    }).catch(error => {
-      console.error('Firebase 登录失败:', error);
-      alert('警告：无法连接云端数据库（可能是未开启匿名验证）。\n无法获取实时订单！');
-      // 降级：虽然无法获取实时订单，但渲染包含空状态的界面
-      renderOrders();
-    });
-  } catch (e) {
-    console.error(e);
-    alert('系统错误: ' + e.message);
+    const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+    if (saved) {
+      const data = JSON.parse(saved);
+      state.orders = data.orders || [];
+      state.orderNumber = data.orderNumber || 1;
+      checkNewOrders();
+    }
+  } catch (error) {
+    console.error('加载本地数据失败:', error);
   }
 }
 
-// 监听 Firebase 实时变化
-function listenToFirebaseChanges() {
-  console.log('开始监听 Firebase...');
+// 监听 LocalStorage 变化
+function listenToLocalChanges() {
+  console.log('开始监听本地数据...');
 
-  // 监听连接状态
-  database.ref('.info/connected').on('value', (snap) => {
-    if (snap.val() === true) {
-      console.log('✅ Firebase 已连接');
-      document.getElementById('orderCount').style.color = '#4CAF50';
-    } else {
-      console.log('❌ Firebase 未连接');
-      document.getElementById('orderCount').style.color = '#f44336';
-    }
-  });
+  window.addEventListener('storage', (e) => {
+    if (e.key === LOCAL_STORAGE_KEY && e.newValue) {
+      console.log('收到数据更新');
+      const data = JSON.parse(e.newValue);
 
-  database.ref('pos').on('value', (snapshot) => {
-    console.log('收到 Firebase 数据更新');
-    const data = snapshot.val();
-    if (data) {
-      state.orders = data.orders ? Object.values(data.orders) : [];
-      console.log('订单数量:', state.orders.length);
+      // 更新状态
+      state.orders = data.orders || [];
+      state.orderNumber = data.orderNumber || state.orderNumber;
+
       renderOrders();
       checkNewOrders();
     }
-  }, (error) => {
-    console.error('Firebase 监听错误:', error);
-    alert('Firebase 连接失败，请检查数据库规则是否已设置为公开读写');
   });
+
+  // 轮询备份（防止同页面或其他情况漏掉事件）
+  setInterval(() => {
+    loadStateFromLocal();
+    renderOrders();
+  }, 2000);
+}
+
+// 保存订单到 LocalStorage
+function saveOrders() {
+  // 保持与 app.js 一致的数据结构
+  const data = {
+    orderNumber: state.orderNumber,
+    orders: state.orders
+  };
+
+  localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data));
 }
 
 // 保存订单到 Firebase
-function saveOrders() {
-  const ordersObj = {};
-  state.orders.forEach(order => {
-    ordersObj[order.id] = order;
-  });
 
-  database.ref('pos/orders').set(ordersObj).catch(error => {
-    console.error('保存到 Firebase 失败:', error);
-  });
-}
 
 // ========================================
 // 渲染函数
