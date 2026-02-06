@@ -249,7 +249,7 @@ function renderMenu() {
     } else if (category.type === 'simple' || category.isDrink) {
         const items = state.menu.drinkItems || [];
         html = items.map((item, index) => `
-      <div class="menu-item" onclick="addSimpleToCart(${item.id})" style="animation-delay: ${index * 0.05}s">
+      <div class="menu-item" onclick="addSimpleToCart('${item.id}')" style="animation-delay: ${index * 0.05}s">
         <span class="emoji">${item.icon}</span>
         <span class="name">${item.name}</span>
         <span class="price">¥${item.price}</span>
@@ -599,10 +599,10 @@ function closeSoupModal() {
 // ========================================
 
 function addSimpleToCart(itemId) {
-    const item = state.menu.drinkItems.find(i => i.id === itemId);
+    const item = state.menu.drinkItems.find(i => String(i.id) === String(itemId));
     if (!item) return;
 
-    const existingIndex = state.cart.drink.findIndex(i => i.id === itemId);
+    const existingIndex = state.cart.drink.findIndex(i => String(i.id) === String(itemId));
 
     if (existingIndex >= 0) {
         state.cart.drink[existingIndex].quantity++;
