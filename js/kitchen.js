@@ -320,6 +320,23 @@ if ('Notification' in window && Notification.permission === 'default') {
   Notification.requestPermission();
 }
 
+// 切换单个菜品的完成状态
+function toggleItemStatus(orderId, type, index) {
+  const order = state.orders.find(o => o.id === orderId);
+  if (!order) return;
+
+  const list = type === 'food' ? order.foods : order.drinks;
+  if (!list || !list[index]) return;
+
+  // 初始化 completed 属性（如果不存在）
+  if (typeof list[index].completed === 'undefined') {
+    list[index].completed = false;
+  }
+
+  list[index].completed = !list[index].completed;
+  saveOrders();
+}
+
 // ========================================
 // 导航
 // ========================================
