@@ -20,7 +20,7 @@ const state = {
     orderNumber: 1,
     orders: [],
     currentOrderId: null,
-    isAddingDrink: false,
+    isAddingItems: false,
     currentComboType: null,
     selectedFlavor: 'hot'
 };
@@ -115,7 +115,7 @@ function listenToLocalChanges() {
             state.orders = data.orders || [];
 
             // 刷新界面
-            if (!state.isAddingDrink) {
+            if (!state.isAddingItems) {
                 updateOrderNumber();
             }
             if (document.getElementById('historyModal').classList.contains('active')) {
@@ -140,9 +140,7 @@ function saveState() {
 
 function renderCategories() {
     const container = document.getElementById('categories');
-    const categories = state.isAddingDrink
-        ? state.menu.categories.filter(c => c.isDrink)
-        : state.menu.categories;
+    const categories = state.menu.categories;
 
     container.innerHTML = categories.map(cat => `
     <button class="category-btn ${cat.id === state.currentCategory ? 'active' : ''}"
@@ -204,7 +202,7 @@ function renderCart() {
         container.innerHTML = `
       <div class="cart-empty">
         <div class="icon">🛒</div>
-        <p>${state.isAddingDrink ? '请选择要追加的饮料' : '购物车是空的'}</p>
+        <p>${state.isAddingItems ? '请选择要追加的菜品' : '购物车是空的'}</p>
       </div>
     `;
         updateTotal();
@@ -213,7 +211,7 @@ function renderCart() {
 
     let html = '';
 
-    if (foodItems.length > 0 || !state.isAddingDrink) {
+    if (foodItems.length > 0 || state.isAddingItems) {
         const foodPaid = state.currentOrderId ?
             (state.orders.find(o => o.id === state.currentOrderId)?.foodPaid || false) : false;
 
@@ -239,7 +237,7 @@ function renderCart() {
     `;
     }
 
-    if (drinkItems.length > 0 || state.isAddingDrink) {
+    if (drinkItems.length > 0 || state.isAddingItems) {
         const drinkPaid = state.currentOrderId ?
             (state.orders.find(o => o.id === state.currentOrderId)?.drinkPaid || false) : false;
 
@@ -309,16 +307,16 @@ function updateTotal() {
     document.getElementById('submitBtn').disabled = total === 0;
 
     const btn = document.getElementById('submitBtn');
-    btn.textContent = state.isAddingDrink ? '确认追加饮料' : '提交订单';
+    btn.textContent = state.isAddingItems ? '确认追加菜品' : '提交订单';
 }
 
 function updateOrderNumber() {
     const container = document.getElementById('orderNumber');
-    if (state.isAddingDrink && state.currentOrderId) {
+    if (state.isAddingItems && state.currentOrderId) {
         const orderNum = String(state.orders.find(o => o.id === state.currentOrderId)?.number || '').padStart(3, '0');
         container.innerHTML = `
-            追加饮料到订单 #${orderNum}
-            <button onclick="exitAddDrinkMode()" style="
+            追加菜品到订单 #${orderNum}
+            <button onclick="exitAddMode()" style="
                 background: rgba(255,255,255,0.3);
                 border: none;
                 border-radius: 50%;
@@ -648,28 +646,42 @@ function submitOrder() {
 
     if (foodItems.length === 0 && drinkItems.length === 0) return;
 
-    if (state.isAddingDrink && state.currentOrderId) {
+    if (state.isAddingItems && state.currentOrderId) {
         const order = state.orders.find(o => o.id === state.currentOrderId);
         if (order) {
-            drinkItems.forEach(newItem => {
-                const existing = order.drinks.find(d => d.id === newItem.id);
-                if (existing) {
-                    existing.quantity += newItem.quantity;
-                } else {
-                    order.drinks.push({ ...newItem });
+            // 合并逻辑：保留厨房完成状态 (completed)
+            // 如果 ID 匹配，说明是原有菜品，保留其状态；如果是新菜品，状态默认为 false (undefined)
+            
+            // 1. 合并 Food
+            order.foods = foodItems.map(cartItem => {
+                const liveItem = order.foods.find(i => i.id === cartItem.id);
+                if (liveItem) {
+                    return { ...cartItem, completed: liveItem.completed };
                 }
+                return cartItem;
             });
+
+            // 2. 合并 Drink
+            order.drinks = drinkItems.map(cartItem => {
+                const liveItem = order.drinks.find(i => i.id === cartItem.id);
+                if (liveItem) {
+                    return { ...cartItem, completed: liveItem.completed };
+                }
+                return cartItem;
+            });
+
+            order.foodTotal = calculateSubtotal(order.foods);
             order.drinkTotal = calculateSubtotal(order.drinks);
             order.total = order.foodTotal + order.drinkTotal;
             order.updatedAt = new Date().toISOString();
         }
-        exitAddDrinkMode();
+        exitAddMode();
     } else {
         const order = {
             id: Date.now(),
             number: state.orderNumber,
-            foods: [...foodItems],
-            drinks: [...drinkItems],
+            foods: JSON.parse(JSON.stringify(foodItems)), // 深拷贝以防万一
+            drinks: JSON.parse(JSON.stringify(drinkItems)),
             foodTotal: calculateSubtotal(foodItems),
             drinkTotal: calculateSubtotal(drinkItems),
             total: calculateSubtotal(foodItems) + calculateSubtotal(drinkItems),
@@ -688,7 +700,7 @@ function submitOrder() {
     renderCart();
     updateOrderNumber();
 
-    alert(state.isAddingDrink ? '饮料追加成功！' : '订单提交成功！');
+    alert(state.isAddingItems ? '追加成功！' : '订单提交成功！');
 }
 
 function togglePayment(type) {
@@ -725,7 +737,7 @@ function showOrderHistory() {
                 return `<div style="text-align: center; color: #999; margin: 10px 0; font-size: 0.8rem;">${order.separatorText}</div>`;
             }
             return `
-      <div class="order-list-item" onclick="selectOrderForDrink('${order.id}')">
+      <div class="order-list-item" onclick="selectOrderForAddition('${order.id}')">
         <span>#${String(order.number).padStart(3, '0')}</span>
         <span>¥${order.total}</span>
         <span style="font-size: 0.8rem; color: #999;">
@@ -750,19 +762,23 @@ function clearOrderHistory() {
     });
 }
 
-function selectOrderForDrink(orderId) {
+function selectOrderForAddition(orderId) {
     // 兼容字符串和数字类型的 ID
     const id = Number(orderId);
     const order = state.orders.find(o => o.id === id);
     if (!order) return;
 
-    state.isAddingDrink = true;
+    state.isAddingItems = true;
     state.currentOrderId = id;
+    
+    // 深拷贝购物车内容，防止直接修改原订单
     state.cart = {
-        food: [...order.foods],
-        drink: [...order.drinks]
+        food: JSON.parse(JSON.stringify(order.foods)),
+        drink: JSON.parse(JSON.stringify(order.drinks))
     };
-    state.currentCategory = 'drink';
+    
+    // 默认回到主食分类，不再强制饮料
+    state.currentCategory = 'staple';
 
     closeHistoryModal();
     renderCategories();
@@ -771,8 +787,8 @@ function selectOrderForDrink(orderId) {
     updateOrderNumber();
 }
 
-function exitAddDrinkMode() {
-    state.isAddingDrink = false;
+function exitAddMode() {
+    state.isAddingItems = false;
     state.currentOrderId = null;
     state.cart = { food: [], drink: [] };
     state.currentCategory = 'staple';
