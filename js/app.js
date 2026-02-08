@@ -367,35 +367,69 @@ function renderComboItems() {
     container.innerHTML = items.map(item => `
     <div class="combo-item-row" style="display: flex; align-items: center; gap: 8px;">
       <span class="item-name" style="flex: 1;">${item.icon} ${item.name}</span>
-      <select class="price-select" id="price_select_${item.id}" 
-              onchange="handlePriceSelectChange('${item.id}')" style="width: 80px;">
-        <option value="0">不要</option>
-        ${prices.map(p => `<option value="${p}">¥${p}</option>`).join('')}
-        <option value="custom">自定义</option>
-      </select>
+      
+      <!-- 自定义金额 (左侧) -->
       <input type="number" id="price_input_${item.id}" 
              class="price-input" 
-             style="width: 60px; display: none; padding: 8px; border: 1px solid #ddd; border-radius: 4px;"
-             placeholder="金额"
+             style="width: 70px; padding: 6px; border: 1px solid #ddd; border-radius: 4px;"
+             placeholder="自定义"
              min="0"
-             onchange="updateComboSubtotal()">
+             oninput="handlePriceInputChange('${item.id}')">
+
+      <!-- 快捷选择 (右侧) -->
+      <select class="price-select" id="price_select_${item.id}" 
+              onchange="handlePriceSelectChange('${item.id}')" 
+              style="width: 80px; padding: 6px; border: 1px solid #ddd; border-radius: 4px;">
+        <option value="0">不要</option>
+        ${prices.map(p => `<option value="${p}">¥${p}</option>`).join('')}
+      </select>
     </div>
   `).join('');
 }
 
-function handlePriceSelectChange(itemId) {
-    const select = document.getElementById(`price_select_${itemId}`);
-    const input = document.getElementById(`price_input_${itemId}`);
-    
-    if (select.value === 'custom') {
-        input.style.display = 'block';
-        input.focus();
-        input.value = ''; // 清空之前的值
-    } else {
-        input.style.display = 'none';
-        input.value = select.value; // 将选择的值同步给 input (隐藏状态下也保持值同步)
-    }
-    updateComboSubtotal();
+// 处理价格选择变化（下拉框）
+window.handlePriceSelectChange = function(itemId) {
+  const select = document.getElementById(`price_select_${itemId}`);
+  const input = document.getElementById(`price_input_${itemId}`);
+  
+  // 如果下拉框选择了非0值，清空自定义输入框
+  if (select.value !== '0') {
+    input.value = '';
+  }
+  updateComboSubtotal();
+};
+
+// 处理价格输入变化（自定义输入框）
+window.handlePriceInputChange = function(itemId) {
+  const select = document.getElementById(`price_select_${itemId}`);
+  const input = document.getElementById(`price_input_${itemId}`);
+  
+  // 如果输入框有值，重置下拉框为"不要"
+  if (input.value && input.value !== '') {
+    select.value = '0';
+  }
+  updateComboSubtotal();
+};
+
+// 获取单品最终价格
+window.getComboItemPrice = function(itemId) {
+  const select = document.getElementById(`price_select_${itemId}`);
+  const input = document.getElementById(`price_input_${itemId}`);
+  
+  // 优先取输入框的值
+  if (input && input.value && parseFloat(input.value) > 0) {
+    return parseFloat(input.value);
+  }
+  
+  // 否则取下拉框的值
+  if (select) {
+    return parseFloat(select.value) || 0;
+  }
+  return 0;
+};
+
+function selectComboItemPrice(itemId, value, btnElement) {
+   // 已废弃，保留占位防止报错（如果还有引用）
 }
 
 function renderFlavorOptions() {
@@ -419,16 +453,7 @@ function updateComboSubtotal() {
     const items = state.menu.comboItems;
     let total = 0;
     items.forEach(item => {
-        const select = document.getElementById(`price_select_${item.id}`);
-        const input = document.getElementById(`price_input_${item.id}`);
-        
-        let price = 0;
-        if (select.value === 'custom') {
-             price = parseInt(input.value) || 0;
-        } else {
-             price = parseInt(select.value) || 0;
-        }
-        total += price;
+        total += getComboItemPrice(item.id);
     });
     document.getElementById('comboSubtotal').textContent = `¥${total}`;
 }
@@ -439,15 +464,7 @@ function addComboToCart() {
     let total = 0;
 
     items.forEach(item => {
-        const select = document.getElementById(`price_select_${item.id}`);
-        const input = document.getElementById(`price_input_${item.id}`);
-        
-        let price = 0;
-        if (select.value === 'custom') {
-             price = parseInt(input.value) || 0;
-        } else {
-             price = parseInt(select.value) || 0;
-        }
+        const price = getComboItemPrice(item.id);
 
         if (price > 0) {
             selectedItems.push({ name: item.name, price, icon: item.icon });

@@ -625,6 +625,8 @@ body {
   padding: var(--space-xl);
   max-width: 400px;
   width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
   transform: scale(0.9);
   transition: var(--transition);
 }
@@ -888,17 +890,22 @@ body {
 
 .spicy-options {
   display: flex;
-  gap: var(--space-md);
+  flex-direction: column;
+  gap: var(--space-sm);
 }
 
 .radio-label {
   display: flex;
   align-items: center;
-  gap: var(--space-xs);
+  justify-content: space-between;
+  flex-direction: row-reverse;
+  gap: var(--space-md);
   cursor: pointer;
-  padding: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
   border-radius: var(--radius-sm);
   transition: var(--transition);
+  background: var(--background);
+  width: 100%;
 }
 
 .radio-label:hover {
