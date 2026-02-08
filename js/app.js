@@ -365,14 +365,37 @@ function renderComboItems() {
     const prices = state.menu.priceOptions;
 
     container.innerHTML = items.map(item => `
-    <div class="combo-item-row">
-      <span class="item-name">${item.icon} ${item.name}</span>
-      <select class="price-select" id="price_${item.id}" onchange="updateComboSubtotal()">
+    <div class="combo-item-row" style="display: flex; align-items: center; gap: 8px;">
+      <span class="item-name" style="flex: 1;">${item.icon} ${item.name}</span>
+      <select class="price-select" id="price_select_${item.id}" 
+              onchange="handlePriceSelectChange('${item.id}')" style="width: 80px;">
         <option value="0">不要</option>
         ${prices.map(p => `<option value="${p}">¥${p}</option>`).join('')}
+        <option value="custom">自定义</option>
       </select>
+      <input type="number" id="price_input_${item.id}" 
+             class="price-input" 
+             style="width: 60px; display: none; padding: 8px; border: 1px solid #ddd; border-radius: 4px;"
+             placeholder="金额"
+             min="0"
+             onchange="updateComboSubtotal()">
     </div>
   `).join('');
+}
+
+function handlePriceSelectChange(itemId) {
+    const select = document.getElementById(`price_select_${itemId}`);
+    const input = document.getElementById(`price_input_${itemId}`);
+    
+    if (select.value === 'custom') {
+        input.style.display = 'block';
+        input.focus();
+        input.value = ''; // 清空之前的值
+    } else {
+        input.style.display = 'none';
+        input.value = select.value; // 将选择的值同步给 input (隐藏状态下也保持值同步)
+    }
+    updateComboSubtotal();
 }
 
 function renderFlavorOptions() {
@@ -396,8 +419,16 @@ function updateComboSubtotal() {
     const items = state.menu.comboItems;
     let total = 0;
     items.forEach(item => {
-        const select = document.getElementById(`price_${item.id}`);
-        total += parseInt(select.value) || 0;
+        const select = document.getElementById(`price_select_${item.id}`);
+        const input = document.getElementById(`price_input_${item.id}`);
+        
+        let price = 0;
+        if (select.value === 'custom') {
+             price = parseInt(input.value) || 0;
+        } else {
+             price = parseInt(select.value) || 0;
+        }
+        total += price;
     });
     document.getElementById('comboSubtotal').textContent = `¥${total}`;
 }
@@ -408,8 +439,16 @@ function addComboToCart() {
     let total = 0;
 
     items.forEach(item => {
-        const select = document.getElementById(`price_${item.id}`);
-        const price = parseInt(select.value) || 0;
+        const select = document.getElementById(`price_select_${item.id}`);
+        const input = document.getElementById(`price_input_${item.id}`);
+        
+        let price = 0;
+        if (select.value === 'custom') {
+             price = parseInt(input.value) || 0;
+        } else {
+             price = parseInt(select.value) || 0;
+        }
+
         if (price > 0) {
             selectedItems.push({ name: item.name, price, icon: item.icon });
             total += price;

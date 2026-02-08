@@ -55,16 +55,17 @@
          {
             "id": "yangtoulian",
             "name": "羊头脸",
-            "price": 50,
-            "unit": "斤",
             "icon": "🐑"
         },
         {
             "id": "yangdu",
             "name": "羊肚",
-            "price": 50,
-            "unit": "斤",
             "icon": "🐑"
+        },
+        {
+            "id": "yangroutang",
+            "name": "羊肉汤",
+            "icon": "🍖"
         }
     ],
     "flavorOptions": [
@@ -161,6 +162,11 @@
         7,
         8,
         9,
-        10
+        10,
+        15,
+        20,
+        30,
+        50,
+        100
     ]
 }
