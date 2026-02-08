@@ -51,6 +51,20 @@
             "id": "ganmianpi",
             "name": "擀面皮",
             "icon": "🥟"
+        },
+         {
+            "id": "yangtoulian",
+            "name": "羊头脸",
+            "price": 50,
+            "unit": "斤",
+            "icon": "🐑"
+        },
+        {
+            "id": "yangdu",
+            "name": "羊肚",
+            "price": 50,
+            "unit": "斤",
+            "icon": "🐑"
         }
     ],
     "flavorOptions": [
