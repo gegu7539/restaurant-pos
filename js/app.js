@@ -353,6 +353,7 @@ function openComboModal(type) {
     updateComboSubtotal();
 
     document.querySelector('input[name="spicy"][value="no"]').checked = true;
+    document.querySelector('input[name="diningType"][value="dine-in"]').checked = true;
     document.getElementById('comboRemark').value = '';
 
     modal.classList.add('active');
@@ -480,6 +481,7 @@ function addComboToCart() {
         ? state.menu.flavorOptions.find(f => f.id === state.selectedFlavor)
         : null;
     const spicy = document.querySelector('input[name="spicy"]:checked').value === 'yes';
+    const diningType = document.querySelector('input[name="diningType"]:checked').value;
     const remark = document.getElementById('comboRemark').value.trim();
 
     const itemNames = selectedItems.map(i => `${i.price}元${i.name}`).join('+');
@@ -487,6 +489,10 @@ function addComboToCart() {
     let details = '';
     if (flavor) details += flavor.name;
     if (spicy) details += (details ? '，' : '') + '加辣🌶️';
+    
+    // 添加堂食/打包标记
+    const diningLabel = diningType === 'takeout' ? '🥡 打包' : '🏠 堂食';
+    details += (details ? '，' : '') + diningLabel;
 
     const cartItem = {
         id: Date.now(),
@@ -808,39 +814,6 @@ function closeHistoryModal() {
 // ========================================
 // 其他功能
 // ========================================
-
-// ========================================
-// 堂食/打包设置
-// ========================================
-
-window.setDiningType = function(type) {
-    state.diningType = type;
-    
-    const btnDineIn = document.getElementById('btnDineIn');
-    const btnTakeout = document.getElementById('btnTakeout');
-    
-    if (type === 'dine-in') {
-        btnDineIn.style.background = 'white';
-        btnDineIn.style.color = '#333';
-        btnDineIn.style.fontWeight = 'bold';
-        btnDineIn.style.boxShadow = '0 1px 2px rgba(0,0,0,0.1)';
-        
-        btnTakeout.style.background = 'transparent';
-        btnTakeout.style.color = '#666';
-        btnTakeout.style.fontWeight = 'normal';
-        btnTakeout.style.boxShadow = 'none';
-    } else {
-        btnTakeout.style.background = 'white';
-        btnTakeout.style.color = '#333';
-        btnTakeout.style.fontWeight = 'bold';
-        btnTakeout.style.boxShadow = '0 1px 2px rgba(0,0,0,0.1)';
-        
-        btnDineIn.style.background = 'transparent';
-        btnDineIn.style.color = '#666';
-        btnDineIn.style.fontWeight = 'normal';
-        btnDineIn.style.boxShadow = 'none';
-    }
-};
 
 function resetOrderNumber() {
     showConfirm('重置订单编号', '确定要将订单编号重置为 #001 吗？（历史订单将保留并添加分隔标记）', () => {
