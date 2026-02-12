@@ -169,7 +169,7 @@ function renderOrderCard(order) {
                 <span>${item.icon || '🍽️'} ${item.name} ×${item.quantity}</span>
                 <span>${item.completed ? '✅' : ''} ¥${item.price * item.quantity}</span>
               </div>
-              ${item.details ? `<div style="font-size: 0.8rem; color: #666; margin-left: 24px;">${item.details}</div>` : ''}
+              ${item.details ? `<div style="font-size: 0.9rem; color: #333; margin-left: 24px; margin-top: 4px; font-weight: 500;">${item.details}</div>` : ''}
               ${item.remark ? `<div style="font-size: 0.75rem; color: #4ECDC4; margin-left: 24px; font-style: italic;">备注: ${item.remark}</div>` : ''}
             `).join('')}
             <div class="order-item" style="font-weight: 600; border-top: 1px dashed #ddd; margin-top: 8px; padding-top: 8px;">

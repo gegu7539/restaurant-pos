@@ -536,6 +536,11 @@ function openSoupModal() {
   `).join('');
 
     updateSoupSubtotal();
+    
+    // 重置堂食/打包选择
+    const defaultRadio = document.querySelector('input[name="soupDiningType"][value="dine-in"]');
+    if (defaultRadio) defaultRadio.checked = true;
+
     document.getElementById('soupModal').classList.add('active');
 }
 
@@ -565,19 +570,21 @@ function addSoupToCart() {
     });
 
     if (selectedItems.length === 0) {
-        alert('请至少选择一种汤');
+        alert('请至少选择一种汤类');
         return;
     }
 
-    const itemNames = selectedItems.map(i => `${i.name}${i.weight}${i.unit}`).join('+');
+    const diningType = document.querySelector('input[name="soupDiningType"]:checked').value;
+    const diningLabel = diningType === 'takeout' ? '🥡 打包' : '🏠 堂食';
+    const details = diningLabel;
 
     const cartItem = {
         id: Date.now(),
-        name: `汤类: ${itemNames}`,
-        price: Math.round(total),
+        name: `汤类: ${selectedItems.map(i => `${i.weight}${i.unit}${i.name}`).join('+')}`,
+        price: total,
         quantity: 1,
         icon: '🍲',
-        details: selectedItems.map(i => `${i.name} ${i.weight}${i.unit}×¥${i.price}=¥${i.weight * i.price}`).join('，'),
+        details: details,
         type: 'soup'
     };
 
@@ -745,12 +752,31 @@ function showOrderHistory() {
                 return `<div style="text-align: center; color: #999; margin: 10px 0; font-size: 0.8rem;">${order.separatorText}</div>`;
             }
             return `
-      <div class="order-list-item" onclick="selectOrderForAddition('${order.id}')">
-        <span>#${String(order.number).padStart(3, '0')}</span>
-        <span>¥${order.total}</span>
-        <span style="font-size: 0.8rem; color: #999;">
-          ${new Date(order.createdAt).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}
-        </span>
+      <div class="order-list-item" onclick="selectOrderForAddition('${order.id}')" style="flex-direction: column; align-items: flex-start; gap: 8px;">
+        <div style="display: flex; justify-content: space-between; width: 100%; border-bottom: 1px dashed #eee; padding-bottom: 4px;">
+            <span style="font-weight: bold;">#${String(order.number).padStart(3, '0')}</span>
+            <span style="color: #666; font-size: 0.85rem;">${new Date(order.createdAt).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}</span>
+        </div>
+        
+        <div style="width: 100%; font-size: 0.9rem;">
+            ${order.foods.map(f => `
+                <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+                    <span>${f.name} ×${f.quantity}</span>
+                </div>
+                ${f.details ? `<div style="font-size: 0.8rem; color: #666; margin-left: 10px;">${f.details}</div>` : ''}
+            `).join('')}
+            
+            ${order.drinks.map(d => `
+                <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+                    <span>${d.name} ×${d.quantity}</span>
+                </div>
+                ${d.details ? `<div style="font-size: 0.8rem; color: #666; margin-left: 10px;">${d.details}</div>` : ''}
+            `).join('')}
+        </div>
+
+        <div style="align-self: flex-end; font-weight: bold; color: #d9534f;">
+            ¥${order.total}
+        </div>
       </div>
     `}).join('');
     }
