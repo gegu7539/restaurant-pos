@@ -22,7 +22,8 @@ const state = {
     currentOrderId: null,
     isAddingItems: false,
     currentComboType: null,
-    selectedFlavor: 'hot'
+    selectedFlavor: 'hot',
+    diningType: 'dine-in'
 };
 
 // ========================================
@@ -552,7 +553,7 @@ function addSoupToCart() {
         const input = document.getElementById(`weight_${item.id}`);
         const weight = parseFloat(input.value) || 0;
         if (weight > 0) {
-            selectedItems.push({ name: item.name, weight, price: item.price, icon: item.icon });
+            selectedItems.push({ name: item.name, weight, price: item.price, icon: item.icon, unit: item.unit });
             total += weight * item.price;
         }
     });
@@ -562,7 +563,7 @@ function addSoupToCart() {
         return;
     }
 
-    const itemNames = selectedItems.map(i => `${i.name}${i.weight}斤`).join('+');
+    const itemNames = selectedItems.map(i => `${i.name}${i.weight}${i.unit}`).join('+');
 
     const cartItem = {
         id: Date.now(),
@@ -570,7 +571,7 @@ function addSoupToCart() {
         price: Math.round(total),
         quantity: 1,
         icon: '🍲',
-        details: selectedItems.map(i => `${i.name} ${i.weight}斤×¥${i.price}=¥${i.weight * i.price}`).join('，'),
+        details: selectedItems.map(i => `${i.name} ${i.weight}${i.unit}×¥${i.price}=¥${i.weight * i.price}`).join('，'),
         type: 'soup'
     };
 
@@ -680,6 +681,7 @@ function submitOrder() {
         const order = {
             id: Date.now(),
             number: state.orderNumber,
+            diningType: state.diningType,
             foods: JSON.parse(JSON.stringify(foodItems)), // 深拷贝以防万一
             drinks: JSON.parse(JSON.stringify(drinkItems)),
             foodTotal: calculateSubtotal(foodItems),
@@ -806,6 +808,39 @@ function closeHistoryModal() {
 // ========================================
 // 其他功能
 // ========================================
+
+// ========================================
+// 堂食/打包设置
+// ========================================
+
+window.setDiningType = function(type) {
+    state.diningType = type;
+    
+    const btnDineIn = document.getElementById('btnDineIn');
+    const btnTakeout = document.getElementById('btnTakeout');
+    
+    if (type === 'dine-in') {
+        btnDineIn.style.background = 'white';
+        btnDineIn.style.color = '#333';
+        btnDineIn.style.fontWeight = 'bold';
+        btnDineIn.style.boxShadow = '0 1px 2px rgba(0,0,0,0.1)';
+        
+        btnTakeout.style.background = 'transparent';
+        btnTakeout.style.color = '#666';
+        btnTakeout.style.fontWeight = 'normal';
+        btnTakeout.style.boxShadow = 'none';
+    } else {
+        btnTakeout.style.background = 'white';
+        btnTakeout.style.color = '#333';
+        btnTakeout.style.fontWeight = 'bold';
+        btnTakeout.style.boxShadow = '0 1px 2px rgba(0,0,0,0.1)';
+        
+        btnDineIn.style.background = 'transparent';
+        btnDineIn.style.color = '#666';
+        btnDineIn.style.fontWeight = 'normal';
+        btnDineIn.style.boxShadow = 'none';
+    }
+};
 
 function resetOrderNumber() {
     showConfirm('重置订单编号', '确定要将订单编号重置为 #001 吗？（历史订单将保留并添加分隔标记）', () => {

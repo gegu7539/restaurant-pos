@@ -89,22 +89,22 @@
         {
             "id": "yangtoulian",
             "name": "羊头脸",
-            "price": 50,
-            "unit": "斤",
+            "price": 1,
+            "unit": "元",
             "icon": "🐑"
         },
         {
             "id": "yangdu",
             "name": "羊肚",
-            "price": 50,
-            "unit": "斤",
+            "price": 1,
+            "unit": "元",
             "icon": "🐑"
         },
         {
             "id": "yangroutang",
             "name": "羊肉汤",
-            "price": 100,
-            "unit": "斤",
+            "price": 1,
+            "unit": "元",
             "icon": "🍖"
         }
     ],
@@ -150,6 +150,18 @@
             "name": "脉动",
             "price": 4,
             "icon": "💧"
+        },
+        {
+            "id": 108,
+            "name": "5元饮料",
+            "price": 5,
+            "icon": "🥤"
+        },
+        {
+            "id": 109,
+            "name": "6元饮料",
+            "price": 6,
+            "icon": "🥤"
         }
     ],
     "priceOptions": [

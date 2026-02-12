@@ -47,6 +47,20 @@
         <div class="order-number" id="orderNumber">订单号: #001</div>
       </div>
 
+      <!-- 堂食/打包选择 -->
+      <div class="dining-type-selector" style="padding: 10px 15px; border-bottom: 1px solid #eee; background: white;">
+        <div style="display: flex; gap: 8px; background: #f5f5f5; padding: 4px; border-radius: 8px;">
+          <button id="btnDineIn" onclick="setDiningType('dine-in')" 
+                  style="flex:1; border:none; padding: 8px; border-radius: 6px; cursor: pointer; background: white; color: #333; font-weight: bold; box-shadow: 0 1px 2px rgba(0,0,0,0.1); transition: all 0.2s;">
+            🏠 堂食
+          </button>
+          <button id="btnTakeout" onclick="setDiningType('takeout')" 
+                  style="flex:1; border:none; padding: 8px; border-radius: 6px; cursor: pointer; background: transparent; color: #666; transition: all 0.2s;">
+            🥡 打包
+          </button>
+        </div>
+      </div>
+
       <div class="cart-content" id="cartContent">
         <!-- 动态生成 -->
       </div>
